@@ -6,6 +6,11 @@ TF_LIB=$(python -c 'import tensorflow as tf; print tf.sysconfig.get_lib()')
 CUDA_INC='/usr/local/cuda/include'
 CUDA_LIB='/usr/local/cuda/lib64/'
 
+echo $TF_INC
+echo $TF_LIB
+echo $CUDA_INC
+echo $CUDA_LIB
+
 # TF1.2
 g++ -std=c++11 tf_sampling.cpp tf_sampling_g.cu.o -o tf_sampling_so.so -shared -fPIC -I $TF_INC -I $CUDA_INC -lcudart -L $CUDA_LIB -O2 -D_GLIBCXX_USE_CXX11_ABI=0
 
