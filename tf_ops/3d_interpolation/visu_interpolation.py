@@ -23,16 +23,16 @@ def fun(xyz1,xyz2,pts2):
         dist = tf.maximum(dist, 1e-10)
         norm = tf.reduce_sum((1.0/dist),axis=2,keep_dims=True)
         norm = tf.tile(norm, [1,1,3])
-        print norm
+        print(norm)
         weight = (1.0/dist) / norm
         interpolated_points = three_interpolate(points, idx, weight)
     with tf.Session('') as sess:
         tmp,pts1,d,w = sess.run([xyz1, interpolated_points, dist, weight])
-        #print w
+        #print(w)
         pts1 = pts1.squeeze()
     return pts1
 
-pts1 = fun(xyz1,xyz2,pts2) 
+pts1 = fun(xyz1,xyz2,pts2)
 all_pts = np.zeros((104,3))
 all_pts[0:100,:] = pts1
 all_pts[100:,:] = pts2
