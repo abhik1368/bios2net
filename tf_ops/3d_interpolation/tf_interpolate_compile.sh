@@ -1,5 +1,5 @@
-TF_INC=$(python -c 'import tensorflow as tf; print tf.sysconfig.get_include()')
-TF_LIB=$(python -c 'import tensorflow as tf; print tf.sysconfig.get_lib()')
+TF_INC=$(python -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
+TF_LIB=$(python -c 'import tensorflow as tf; print(tf.sysconfig.get_lib()')
 CUDA_INC='/usr/local/cuda/include'
 CUDA_LIB='/usr/local/cuda/lib64/'
 

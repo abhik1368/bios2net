@@ -12,11 +12,11 @@ for scene_name in scene_names:
     with open(agg_filename) as jsondata:
         d = json.load(jsondata)
         for x in d['segGroups']:
-            labels.add(x['label']) 
+            labels.add(x['label'])
 
 fout = open('class_names.txt', 'w')
 for label in list(labels):
-    print label
+    print(label)
     try:
         fout.write(label+'\n')
     except:

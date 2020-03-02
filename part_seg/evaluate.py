@@ -60,13 +60,13 @@ def evaluate():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
             is_training_pl = tf.placeholder(tf.bool, shape=())
-            print is_training_pl
-            
-            print "--- Get model and loss"
+            print(is_training_pl)
+
+            print("--- Get model and loss")
             pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl)
             loss = MODEL.get_loss(pred, labels_pl)
             saver = tf.train.Saver()
-        
+
         # Create a session
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -115,7 +115,7 @@ def eval_one_epoch(sess, ops):
 
     log_string(str(datetime.now()))
     log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
-    
+
     batch_data = np.zeros((BATCH_SIZE, NUM_POINT, 6))
     batch_label = np.zeros((BATCH_SIZE, NUM_POINT)).astype(np.int32)
     for batch_idx in range(num_batches):
@@ -144,7 +144,7 @@ def eval_one_epoch(sess, ops):
             pred_val += temp_pred_val
         loss_val /= float(VOTE_NUM)
         # ---------------------------------------------------------------------
-    
+
         # Select valid data
         cur_pred_val = pred_val[0:cur_batch_size]
         # Constrain pred to the groundtruth classes (selected by seg_classes[cat])
@@ -165,7 +165,7 @@ def eval_one_epoch(sess, ops):
 
         for i in range(cur_batch_size):
             segp = cur_pred_val[i,:]
-            segl = cur_batch_label[i,:] 
+            segl = cur_batch_label[i,:]
             cat = seg_label_to_cat[segl[0]]
             part_ious = [0.0 for _ in range(len(seg_classes[cat]))]
             for l in seg_classes[cat]:
@@ -180,7 +180,7 @@ def eval_one_epoch(sess, ops):
         for iou in shape_ious[cat]:
             all_shape_ious.append(iou)
         shape_ious[cat] = np.mean(shape_ious[cat])
-    print len(all_shape_ious)
+    print(len(all_shape_ious))
     mean_shape_ious = np.mean(shape_ious.values())
     log_string('eval mean loss: %f' % (loss_sum / float(len(TEST_DATASET)/BATCH_SIZE)))
     log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
@@ -189,7 +189,7 @@ def eval_one_epoch(sess, ops):
         log_string('eval mIoU of %s:\t %f'%(cat, shape_ious[cat]))
     log_string('eval mean mIoU: %f' % (mean_shape_ious))
     log_string('eval mean mIoU (all shapes): %f' % (np.mean(all_shape_ious)))
-         
+
 if __name__ == "__main__":
     log_string('pid: %s'%(str(os.getpid())))
     evaluate()
