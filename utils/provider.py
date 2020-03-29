@@ -72,10 +72,11 @@ def rotate_point_cloud_z(batch_data):
 def rotate_point_cloud_with_normal(batch_xyz_normal):
     ''' Randomly rotate XYZ, normal point cloud.
         Input:
-            batch_xyz_normal: B,N,6, first three channels are XYZ, last 3 all normal
+            batch_xyz_normal: B,N,3+c, first three channels are XYZ, last 3 all normal
         Output:
-            B,N,6, rotated XYZ, normal point cloud
+            B,N,3+c, rotated XYZ, normal point cloud
     '''
+    n_channels = batch_xyz_normal.shape[2]
     for k in range(batch_xyz_normal.shape[0]):
         rotation_angle = np.random.uniform() * 2 * np.pi
         cosval = np.cos(rotation_angle)
@@ -84,9 +85,9 @@ def rotate_point_cloud_with_normal(batch_xyz_normal):
                                     [0, 1, 0],
                                     [-sinval, 0, cosval]])
         shape_pc = batch_xyz_normal[k,:,0:3]
-        shape_normal = batch_xyz_normal[k,:,3:6]
+        shape_normal = batch_xyz_normal[k,:,3:n_channels]
         batch_xyz_normal[k,:,0:3] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
-        batch_xyz_normal[k,:,3:6] = np.dot(shape_normal.reshape((-1, 3)), rotation_matrix)
+        # batch_xyz_normal[k,:,3:n_channels] = np.dot(shape_normal.reshape((-1, 3)), rotation_matrix)
     return batch_xyz_normal
 
 def rotate_perturbation_point_cloud_with_normal(batch_data, angle_sigma=0.06, angle_clip=0.18):
@@ -96,6 +97,7 @@ def rotate_perturbation_point_cloud_with_normal(batch_data, angle_sigma=0.06, an
         Return:
           BxNx3 array, rotated batch of point clouds
     """
+    n_channels = batch_data.shape[2]
     rotated_data = np.zeros(batch_data.shape, dtype=np.float32)
     for k in range(batch_data.shape[0]):
         angles = np.clip(angle_sigma*np.random.randn(3), -angle_clip, angle_clip)
@@ -110,9 +112,8 @@ def rotate_perturbation_point_cloud_with_normal(batch_data, angle_sigma=0.06, an
                        [0,0,1]])
         R = np.dot(Rz, np.dot(Ry,Rx))
         shape_pc = batch_data[k,:,0:3]
-        shape_normal = batch_data[k,:,3:6]
         rotated_data[k,:,0:3] = np.dot(shape_pc.reshape((-1, 3)), R)
-        rotated_data[k,:,3:6] = np.dot(shape_normal.reshape((-1, 3)), R)
+        rotated_data[k,:,3:n_channels] = batch_data[k,:,3:n_channels]
     return rotated_data
 
 
@@ -193,7 +194,7 @@ def jitter_point_cloud(batch_data, sigma=0.01, clip=0.05):
     """
     B, N, C = batch_data.shape
     assert(clip > 0)
-    jittered_data = np.clip(sigma * np.random.randn(B, N, C), -1*clip, clip)
+    jittered_data = np.clip(sigma * np.random.randn(B, N, 3), -1*clip, clip)
     jittered_data += batch_data
     return jittered_data
 
