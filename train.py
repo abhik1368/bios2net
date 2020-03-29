@@ -68,15 +68,20 @@ HOSTNAME = socket.gethostname()
 NUM_CLASSES = 40
 
 # Shapenet official train/test split
+print('Creating datasets...')
 if FLAGS.normal:
+    print('... in normal mode')
     assert(NUM_POINT<=10000)
     DATA_PATH = os.path.join(ROOT_DIR, 'data/modelnet40_normal_resampled')
     TRAIN_DATASET = modelnet_dataset.ModelNetDataset(root=DATA_PATH, npoints=NUM_POINT, split='train', normal_channel=FLAGS.normal, batch_size=BATCH_SIZE)
     TEST_DATASET = modelnet_dataset.ModelNetDataset(root=DATA_PATH, npoints=NUM_POINT, split='test', normal_channel=FLAGS.normal, batch_size=BATCH_SIZE)
 else:
+    print('... in hdf mode')
     assert(NUM_POINT<=2048)
     TRAIN_DATASET = modelnet_h5_dataset.ModelNetH5Dataset(os.path.join(BASE_DIR, 'data/modelnet40_ply_hdf5_2048/train_files.txt'), batch_size=BATCH_SIZE, npoints=NUM_POINT, shuffle=True)
     TEST_DATASET = modelnet_h5_dataset.ModelNetH5Dataset(os.path.join(BASE_DIR, 'data/modelnet40_ply_hdf5_2048/test_files.txt'), batch_size=BATCH_SIZE, npoints=NUM_POINT, shuffle=False)
+
+print('Database created')
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -104,8 +109,11 @@ def get_bn_decay(batch):
     return bn_decay
 
 def train():
+    print('Start training...')
     with tf.Graph().as_default():
+        print('tf.Graph created')
         with tf.device('/gpu:'+str(GPU_INDEX)):
+            print('connected to gpu')
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
             is_training_pl = tf.placeholder(tf.bool, shape=())
 
