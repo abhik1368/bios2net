@@ -14,8 +14,8 @@ import numpy as np
 import tf_util
 from pointnet_util import pointnet_sa_module
 
-def placeholder_inputs(batch_size, num_point):
-    pointclouds_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point, 3))
+def placeholder_inputs(batch_size, num_point, num_channels):
+    pointclouds_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point, num_channels))
     labels_pl = tf.placeholder(tf.int32, shape=(batch_size))
     return pointclouds_pl, labels_pl
 
@@ -24,8 +24,12 @@ def get_model(point_cloud, is_training, bn_decay=None):
     batch_size = point_cloud.get_shape()[0].value
     num_point = point_cloud.get_shape()[1].value
     end_points = {}
-    l0_xyz = point_cloud
-    l0_points = None
+    if point_cloud.shape[2] > 3:
+        l0_xyz = point_cloud[:, :, :3]
+        l0_points = point_cloud[:, :, 3:]
+    else:
+        l0_xyz = point_cloud
+        l0_points = None
     end_points['l0_xyz'] = l0_xyz
 
     # Set abstraction layers
@@ -41,7 +45,7 @@ def get_model(point_cloud, is_training, bn_decay=None):
     net = tf_util.dropout(net, keep_prob=0.5, is_training=is_training, scope='dp1')
     net = tf_util.fully_connected(net, 256, bn=True, is_training=is_training, scope='fc2', bn_decay=bn_decay)
     net = tf_util.dropout(net, keep_prob=0.5, is_training=is_training, scope='dp2')
-    net = tf_util.fully_connected(net, 40, activation_fn=None, scope='fc3')
+    net = tf_util.fully_connected(net, 197, activation_fn=None, scope='fc3')
 
     return net, end_points
 
