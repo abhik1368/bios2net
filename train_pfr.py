@@ -47,7 +47,7 @@ EPOCH_CNT = 0
 NUM_GPUS = FLAGS.num_gpus
 BATCH_SIZE = FLAGS.batch_size
 assert BATCH_SIZE % NUM_GPUS == 0
-DEVICE_BATCH_SIZE = BATCH_SIZE / NUM_GPUS
+DEVICE_BATCH_SIZE = BATCH_SIZE // NUM_GPUS
 
 NUM_POINT = FLAGS.num_point
 MAX_EPOCH = FLAGS.max_epoch
@@ -77,20 +77,24 @@ HOSTNAME = socket.gethostname()
 
 
 NUM_CLASSES = 197
-database_manager = ProteinDataset(
-    path='data/scaled_splited7',
+TRAIN_DATASET = pfr_dataset.PFRDataset(
+    'data/scaled_splited7',
     batch_size=BATCH_SIZE,
-    n_classes=NUM_CLASSES,
-    dataset='f199',
-    val_split=0.1,
-    n_points=NUM_POINT,
-    cords_channels=3,
+    npoints=NUM_POINT,
     features_channels=FEATURES_CHANNELS,
+    split='train',
+    normalize=True,
+    normal_channel=True,
 )
-
-TRAIN_DATASET = database_manager.train_ds
-VALIDATION_DATASET = database_manager.val_ds
-TEST_DATASET = database_manager.test_ds
+TEST_DATASET = pfr_dataset.PFRDataset(
+    'data/scaled_splited7',
+    batch_size=BATCH_SIZE,
+    npoints=NUM_POINT,
+    features_channels=FEATURES_CHANNELS,
+    split='test',
+    normalize=True,
+    normal_channel=True,
+)
 
 # # Shapenet official train/test split
 # if FLAGS.normal:
@@ -185,7 +189,7 @@ def get_bn_decay(batch):
 def train():
     with tf.Graph().as_default():
         with tf.device('/cpu:0'):
-            pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
+            pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT, 3 + FEATURES_CHANNELS)
             is_training_pl = tf.placeholder(tf.bool, shape=())
 
             # Note the global_step=batch parameter to minimize.
@@ -305,10 +309,8 @@ def train_one_epoch(sess, ops, train_writer):
     total_seen = 0
     loss_sum = 0
     batch_idx = 0
-    # while TRAIN_DATASET.has_next_batch():
-        # batch_data, batch_label = TRAIN_DATASET.next_batch(augment=True)
-
-    for batch_data, batch_label in TRAIN_DATASET:
+    while TRAIN_DATASET.has_next_batch():
+        batch_data, batch_label = TRAIN_DATASET.next_batch(augment=True)
 
         # batch_data = provider.random_point_dropout(batch_data)
         bsize = batch_data.shape[0]
