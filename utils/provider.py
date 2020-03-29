@@ -116,7 +116,6 @@ def rotate_perturbation_point_cloud_with_normal(batch_data, angle_sigma=0.06, an
         rotated_data[k,:,3:n_channels] = batch_data[k,:,3:n_channels]
     return rotated_data
 
-
 def rotate_point_cloud_by_angle(batch_data, rotation_angle):
     """ Rotate the point cloud along up direction with certain angle.
         Input:
