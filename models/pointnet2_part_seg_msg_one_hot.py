@@ -3,7 +3,9 @@ import sys
 BASE_DIR = os.path.dirname(__file__)
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, '../utils'))
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import numpy as np
 import tf_util
 from pointnet_util import pointnet_sa_module, pointnet_sa_module_msg, pointnet_fp_module
@@ -40,7 +42,7 @@ def get_model(point_cloud, cls_label, is_training, bn_decay=None):
 
     # FC layers
     net = tf_util.conv1d(l0_points, 128, 1, padding='VALID', bn=True, is_training=is_training, scope='fc1', bn_decay=bn_decay)
-    end_points['feats'] = net 
+    end_points['feats'] = net
     net = tf_util.dropout(net, keep_prob=0.5, is_training=is_training, scope='dp1')
     net = tf_util.conv1d(net, 50, 1, padding='VALID', activation_fn=None, scope='fc2')
 

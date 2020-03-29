@@ -2,7 +2,8 @@
     PointNet version 1 Model
     Reference: https://github.com/charlesq34/pointnet
 '''
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 import math
 import sys
@@ -24,7 +25,7 @@ def get_model(point_cloud, is_training, bn_decay=None):
     num_point = point_cloud.get_shape()[1].value
     end_points = {}
     input_image = tf.expand_dims(point_cloud, -1)
-    
+
     # Point functions (MLP implemented as conv2d)
     net = tf_util.conv2d(input_image, 64, [1,3],
                          padding='VALID', stride=[1,1],
@@ -50,7 +51,7 @@ def get_model(point_cloud, is_training, bn_decay=None):
     # Symmetric function: max pooling
     net = tf_util.max_pool2d(net, [num_point,1],
                              padding='VALID', scope='maxpool')
-    
+
     # MLP on global point cloud vector
     net = tf.reshape(net, [batch_size, -1])
     net = tf_util.fully_connected(net, 512, bn=True, is_training=is_training,
