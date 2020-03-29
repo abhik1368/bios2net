@@ -114,6 +114,7 @@ def train():
         print('tf.Graph created')
         with tf.device('/gpu:'+str(GPU_INDEX)):
             print('connected to gpu')
+            print('model:', MODEL)
             pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
             is_training_pl = tf.placeholder(tf.bool, shape=())
 
@@ -127,6 +128,7 @@ def train():
 
             # Get model and loss
             pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, bn_decay=bn_decay)
+            print(pred)
             MODEL.get_loss(pred, labels_pl, end_points)
             losses = tf.get_collection('losses')
             total_loss = tf.add_n(losses, name='total_loss')
