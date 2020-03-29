@@ -1,4 +1,6 @@
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import numpy as np
 import argparse
 import socket
@@ -77,7 +79,7 @@ if __name__=='__main__':
     for i in range(len(TEST_DATASET)):
         ps, seg = TEST_DATASET[i]
         sess, ops = get_model(batch_size=1, num_point=ps.shape[0])
-        segp = inference(sess, ops, np.expand_dims(ps,0), batch_size=1) 
+        segp = inference(sess, ops, np.expand_dims(ps,0), batch_size=1)
         segp = segp.squeeze()
 
         gt = cmap[seg, :]
