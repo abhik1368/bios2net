@@ -76,7 +76,7 @@ BN_DECAY_CLIP = 0.99
 HOSTNAME = socket.gethostname()
 
 
-NUM_CLASSES = 197
+NUM_CLASSES = 198
 TRAIN_DATASET = pfr_dataset.PFRDataset(
     'data/scaled_splited7',
     batch_size=BATCH_SIZE,
