@@ -44,7 +44,7 @@ LOG_FOUT.write(str(FLAGS)+'\n')
 
 NUM_CLASSES = 40
 SHAPE_NAMES = [line.rstrip() for line in \
-    open(os.path.join(ROOT_DIR, 'data/modelnet40_ply_hdf5_2048/shape_names.txt'))] 
+    open(os.path.join(ROOT_DIR, 'data/modelnet40_ply_hdf5_2048/shape_names.txt'))]
 
 HOSTNAME = socket.gethostname()
 
@@ -66,9 +66,9 @@ def log_string(out_str):
 
 def evaluate(num_votes):
     is_training = False
-     
+
     with tf.device('/gpu:'+str(GPU_INDEX)):
-        pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
+        pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT, 3)
         is_training_pl = tf.placeholder(tf.bool, shape=())
 
         # simple model
@@ -76,10 +76,10 @@ def evaluate(num_votes):
         MODEL.get_loss(pred, labels_pl, end_points)
         losses = tf.get_collection('losses')
         total_loss = tf.add_n(losses, name='total_loss')
-        
+
         # Add ops to save and restore all the variables.
         saver = tf.train.Saver()
-        
+
     # Create a session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -148,7 +148,7 @@ def eval_one_epoch(sess, ops, num_votes=1, topk=1):
             l = batch_label[i]
             total_seen_class[l] += 1
             total_correct_class[l] += (pred_val[i] == l)
-    
+
     log_string('eval mean loss: %f' % (loss_sum / float(batch_idx)))
     log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
     log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
