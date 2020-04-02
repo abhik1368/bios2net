@@ -141,6 +141,7 @@ def eval_one_epoch(sess, ops, num_votes=1, topk=1):
             loss_val, pred_val = sess.run([ops['loss'], ops['pred']], feed_dict=feed_dict)
             batch_pred_sum += pred_val
         pred_val = np.argmax(batch_pred_sum, 1)
+        print(pred_val, batch_label)
         correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
         total_correct += correct
         total_seen += bsize
