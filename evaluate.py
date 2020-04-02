@@ -2,7 +2,9 @@
     Evaluate classification performance with optional voting.
     Will use H5 dataset in default. If using normal, will shift to the normal dataset.
 '''
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
+tf.disable_v2_behavior()
 import numpy as np
 import argparse
 import socket
