@@ -120,6 +120,7 @@ def eval_one_epoch(sess, ops, num_votes=1, topk=1):
         batch_data, batch_label = TEST_DATASET.next_batch(augment=False)
         bsize = batch_data.shape[0]
         print('Batch: %03d, batch size: %d'%(batch_idx, bsize))
+        print(batch_data)
         # for the last batch in the epoch, the bsize:end are from last batch
         cur_batch_data[0:bsize,...] = batch_data
         cur_batch_label[0:bsize] = batch_label
@@ -139,9 +140,11 @@ def eval_one_epoch(sess, ops, num_votes=1, topk=1):
                          ops['labels_pl']: cur_batch_label,
                          ops['is_training_pl']: is_training}
             loss_val, pred_val = sess.run([ops['loss'], ops['pred']], feed_dict=feed_dict)
+            print('fresh pred val', pred_val)
             batch_pred_sum += pred_val
         pred_val = np.argmax(batch_pred_sum, 1)
-        print(pred_val, batch_label)
+        print('loss val', loss_val)
+        print('pred_val vs batch_label', pred_val, batch_label)
         correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
         total_correct += correct
         total_seen += bsize
