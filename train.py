@@ -218,11 +218,15 @@ def train_one_epoch(sess, ops, train_writer):
 
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
                      ops['labels_pl']: cur_batch_label,
-                     ops['is_training_pl']: is_training,}
+                     ops['is_training_pl']: False}
         loss_val, pred_val = sess.run([ops['loss'], ops['pred']], feed_dict=feed_dict)
 
         pred_val = np.argmax(pred_val, 1)
         my_correct += np.sum(pred_val[0:bsize] == batch_label[0:bsize])
+
+        feed_dict = {ops['pointclouds_pl']: cur_batch_data,
+                ops['labels_pl']: cur_batch_label,
+                ops['is_training_pl']: is_training,}
 
         summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
@@ -233,7 +237,7 @@ def train_one_epoch(sess, ops, train_writer):
         total_correct += correct
         total_seen += bsize
         loss_sum += loss_val
-        if (batch_idx+1)%50 == 0:
+        if (batch_idx+1)%1 == 0:
             log_string(' ---- batch: %03d ----' % (batch_idx+1))
             log_string('mean loss: %f' % (loss_sum / 50))
             log_string('accuracy: %f' % (total_correct / float(total_seen)))
@@ -241,6 +245,7 @@ def train_one_epoch(sess, ops, train_writer):
             total_correct = 0
             total_seen = 0
             loss_sum = 0
+            my_correct = 0
         batch_idx += 1
 
     TRAIN_DATASET.reset()
