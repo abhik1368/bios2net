@@ -241,6 +241,23 @@ def train_one_epoch(sess, ops, train_writer):
 
     TRAIN_DATASET.reset()
 
+def eval_one_epoch(sess, ops, test_writer):
+    """ ops: dict mapping from string to tf ops """
+    global EPOCH_CNT
+    is_training = False
+
+    # Make sure batch data is of same size
+    cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TEST_DATASET.num_channel()))
+    cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
+
+    total_correct = 0
+    total_seen = 0
+    loss_sum = 0
+    batch_idx = 0
+    shape_ious = []
+    total_seen_class = [0 for _ in range(NUM_CLASSES)]
+    total_correct_class = [0 for _ in range(NUM_CLASSES)]
+
     log_string(str(datetime.now()))
     log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
 
