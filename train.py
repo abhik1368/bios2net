@@ -268,7 +268,7 @@ def eval_one_epoch(sess, ops, test_writer):
                      ops['labels_pl']: cur_batch_label,
                      ops['is_training_pl']: is_training}
         summary, step, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
-            ops['loss'], ops['pred']], feed_dict=feed_dict)
+            ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
         test_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 1)
         correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
