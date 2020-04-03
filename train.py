@@ -257,8 +257,8 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string(str(datetime.now()))
     log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
 
-    while TEST_DATASET.has_next_batch():
-        batch_data, batch_label = TEST_DATASET.next_batch(augment=False)
+    while TRAIN_DATASET.has_next_batch():
+        batch_data, batch_label = TRAIN_DATASET.next_batch(augment=False)
         bsize = batch_data.shape[0]
         # for the last batch in the epoch, the bsize:end are from last batch
         cur_batch_data[0:bsize,...] = batch_data
