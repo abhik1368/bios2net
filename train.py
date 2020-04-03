@@ -219,7 +219,8 @@ def train_one_epoch(sess, ops, train_writer):
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
                      ops['labels_pl']: cur_batch_label,
                      ops['is_training_pl']: False}
-        loss_val, pred_val = sess.run([ops['loss'], ops['pred']], feed_dict=feed_dict)
+        summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
+            ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
 
         pred_val = np.argmax(pred_val, 1)
         my_correct += np.sum(pred_val[0:bsize] == batch_label[0:bsize])
