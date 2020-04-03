@@ -222,6 +222,8 @@ def train_one_epoch(sess, ops, train_writer):
                      ops['is_training_pl']: is_training,}
         summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
+        if (batch_idx+1)%50 == 0:
+            print(pred_val)
         train_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 1)
         correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
@@ -239,23 +241,6 @@ def train_one_epoch(sess, ops, train_writer):
 
     TRAIN_DATASET.reset()
 
-def eval_one_epoch(sess, ops, test_writer):
-    """ ops: dict mapping from string to tf ops """
-    global EPOCH_CNT
-    is_training = False
-
-    # Make sure batch data is of same size
-    cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TEST_DATASET.num_channel()))
-    cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
-
-    total_correct = 0
-    total_seen = 0
-    loss_sum = 0
-    batch_idx = 0
-    shape_ious = []
-    total_seen_class = [0 for _ in range(NUM_CLASSES)]
-    total_correct_class = [0 for _ in range(NUM_CLASSES)]
-
     log_string(str(datetime.now()))
     log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
 
@@ -271,6 +256,7 @@ def eval_one_epoch(sess, ops, test_writer):
                      ops['is_training_pl']: is_training}
         summary, step, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['loss'], ops['pred']], feed_dict=feed_dict)
+        print(pred_val)
         test_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 1)
         correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
