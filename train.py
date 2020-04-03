@@ -237,7 +237,7 @@ def train_one_epoch(sess, ops, train_writer):
         total_correct += correct
         total_seen += bsize
         loss_sum += loss_val
-        if (batch_idx+1)%1 == 0:
+        if (batch_idx+1)%50 == 0:
             log_string(' ---- batch: %03d ----' % (batch_idx+1))
             log_string('mean loss: %f' % (loss_sum / 50))
             log_string('accuracy: %f' % (total_correct / float(total_seen)))
@@ -299,7 +299,7 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
     EPOCH_CNT += 1
 
-    TEST_DATASET.reset()
+    TRAIN_DATASET.reset()
     return total_correct/float(total_seen)
 
 
