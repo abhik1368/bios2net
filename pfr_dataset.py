@@ -84,7 +84,7 @@ class PFRDataset:
             fn = self.datapath[index]
             cls = self.classes[self.datapath[index][0]]
             cls = np.array([cls]).astype(np.int32)
-            point_set = np.load(fn[1])
+            point_set = np.load(fn[1])[:, :3 + self.features_channels]
 
             # Take exactly n npoints
             ind = np.arange(point_set.shape[0])
