@@ -73,7 +73,7 @@ class PFRDataset:
 
         jittered_data = provider.random_scale_point_cloud(rotated_data[:, :, 0:3])
         jittered_data = provider.shift_point_cloud(jittered_data)
-        jittered_data = provider.jitter_point_cloud(jittered_data)
+        # jittered_data = provider.jitter_point_cloud(jittered_data)
         rotated_data[:, :, 0:3] = jittered_data
         return provider.shuffle_points(rotated_data)
 

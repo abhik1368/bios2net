@@ -4,7 +4,7 @@
 '''
 import argparse
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 import h5py
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -36,6 +36,7 @@ parser.add_argument('--optimizer', default='adam', help='adam or momentum [defau
 parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
+parser.add_argument('--wandb', action='store_true', default=False)
 FLAGS = parser.parse_args()
 
 EPOCH_CNT = 0
@@ -50,6 +51,7 @@ OPTIMIZER = FLAGS.optimizer
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 FEATURES_CHANNELS = FLAGS.features_channels
+WANDB = FLAGS.wandb
 
 MODEL = importlib.import_module(FLAGS.model) # import network module
 MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
@@ -69,7 +71,7 @@ HOSTNAME = socket.gethostname()
 
 NUM_CLASSES = 198
 TRAIN_DATASET = pfr_dataset.PFRDataset(
-    'data/scaled_splited7',
+    'data/scaled_splited10',
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
     features_channels=FEATURES_CHANNELS,
@@ -78,7 +80,7 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     normal_channel=True,
 )
 TEST_DATASET = pfr_dataset.PFRDataset(
-    'data/scaled_splited7',
+    'data/scaled_splited10',
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
     features_channels=FEATURES_CHANNELS,
@@ -87,6 +89,19 @@ TEST_DATASET = pfr_dataset.PFRDataset(
     normal_channel=True,
 )
 print('Database created')
+
+def get_timestamp():
+    timestamp = str(datetime.now(timezone.utc))[:16]
+    timestamp = timestamp.replace('-', '')
+    timestamp = timestamp.replace(' ', '_')
+    timestamp = timestamp.replace(':', '')
+    return timestamp
+
+INIT_TIMESTAMP = get_timestamp()
+
+if WANDB:
+    import wandb
+    wandb.init(project='pointnet_pfr', name=INIT_TIMESTAMP)
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -234,6 +249,8 @@ def train_one_epoch(sess, ops, train_writer):
             log_string(' ---- batch: %03d ----' % (batch_idx+1))
             log_string('mean loss: %f' % (loss_sum / 50))
             log_string('accuracy: %f' % (total_correct / float(total_seen)))
+            if WANDB:
+                wandb.log({'mean_loss': loss_sum / 50, 'accuracy': total_correct / float(total_seen)}, step=step)
             total_correct = 0
             total_seen = 0
             loss_sum = 0
@@ -287,11 +304,16 @@ def eval_one_epoch(sess, ops, test_writer):
 
     log_string('eval mean loss: %f' % (loss_sum / float(batch_idx)))
     log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
-    log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
+    log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class, dtype=np.float))))
+    if WANDB:
+        wandb.log({'mval_ean_loss': loss_sum / float(batch_idx),
+                   'val_accuracy': total_correct / float(total_seen),
+                   'eval avg class acc: ': np.mean(np.array(total_correct_class) / np.array(total_seen_class, dtype=np.float))},
+                    step=step)
     EPOCH_CNT += 1
 
     TEST_DATASET.reset()
-    return total_correct/float(total_seen)
+    return total_correct / float(total_seen)
 
 
 if __name__ == "__main__":
