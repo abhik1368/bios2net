@@ -271,7 +271,7 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string(str(datetime.now()))
     log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
 
-    while TRAIN_DATASET.has_next_batch():
+    while TEST_DATASET.has_next_batch():
         batch_data, batch_label = TRAIN_DATASET.next_batch(augment=False)
         bsize = batch_data.shape[0]
         # for the last batch in the epoch, the bsize:end are from last batch
@@ -300,7 +300,7 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
     EPOCH_CNT += 1
 
-    TRAIN_DATASET.reset()
+    TEST_DATASET.reset()
     return total_correct/float(total_seen)
 
 
