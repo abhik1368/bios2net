@@ -216,8 +216,7 @@ def train_one_epoch(sess, ops, train_writer):
         cur_batch_label[0:bsize] = batch_label
 
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
-                    ops['labels_pl']: cur_batch_label,
-                    ops['is_training_pl']: True}
+                    ops['labels_pl']: cur_batch_label}
 
         summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
@@ -268,7 +267,8 @@ def eval_one_epoch(sess, ops, test_writer):
 
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
                      ops['labels_pl']: cur_batch_label,
-                     ops['is_training_pl']: is_training}
+                    #  ops['is_training_pl']: is_training
+                     }
         summary, step, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['loss'], ops['pred']], feed_dict=feed_dict)
         test_writer.add_summary(summary, step)
