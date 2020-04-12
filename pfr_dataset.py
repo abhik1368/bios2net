@@ -35,12 +35,18 @@ class PFRDataset:
         normal_channel=False,
         cache_size=15000,
         shuffle=None,
+        add_n_c_info=True
     ):
         self.root = root
         self.batch_size = batch_size
         self.npoints = npoints
         self.normalize = normalize
-        self.features_channels = features_channels
+        self.add_n_c_info = add_n_c_info
+        if add_n_c_info:
+            self.features_channels = features_channels + 1
+            self.n_c = np.expand_dims(np.array(np.arange(npoints) / npoints), axis=1)
+        else:
+            self.features_channels = features_channels
 
         self.classes_names = [i.strip() for i in os.listdir(self.root)]
         self.classes = dict(zip(self.classes_names, range(len(self.classes_names))))
@@ -85,22 +91,26 @@ class PFRDataset:
             cls = self.classes[self.datapath[index][0]]
             cls = np.array([cls]).astype(np.int32)
             point_set = np.load(fn[1])[:, :3 + self.features_channels]
-
-            # Take exactly n npoints
-            ind = np.arange(point_set.shape[0])
-            if len(ind) > self.npoints:
-                ind = np.random.choice(ind, self.npoints, replace=False)
-            else:
-                ind = np.random.choice(ind, self.npoints, replace=True)
-
-            point_set = point_set[ind, :]
-
-            if self.normalize:
-                point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
-            if not self.normal_channel:
-                point_set = point_set[:, 0:3]
             if len(self.cache) < self.cache_size:
                 self.cache[index] = (point_set, cls)
+
+        # Take exactly n npoints
+        ind = np.arange(point_set.shape[0])
+        if len(ind) > self.npoints:
+            ind = np.sort(np.random.choice(ind, self.npoints, replace=False))
+        else:
+            ind = np.sort(np.random.choice(ind, self.npoints, replace=True))
+
+        point_set = point_set[ind, :]
+
+        if self.add_n_c_info:
+            point_set = np.concatenate([point_set, self.n_c], axis=1)
+
+        if self.normalize:
+            point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
+        if not self.normal_channel:
+            point_set = point_set[:, 0:3]
+
         return point_set, cls
 
     def __getitem__(self, index):
