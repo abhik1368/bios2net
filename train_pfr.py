@@ -37,6 +37,7 @@ parser.add_argument('--decay_step', type=int, default=200000, help='Decay step f
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--wandb', action='store_true', default=False)
+parser.add_argument('--add_n_c', action='store_true', default=False)
 FLAGS = parser.parse_args()
 
 EPOCH_CNT = 0
@@ -52,6 +53,7 @@ DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 FEATURES_CHANNELS = FLAGS.features_channels
 WANDB = FLAGS.wandb
+ADD_N_C = FLAGS.add_n_c
 
 MODEL = importlib.import_module(FLAGS.model) # import network module
 MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
@@ -76,8 +78,9 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     npoints=NUM_POINT,
     features_channels=FEATURES_CHANNELS,
     split='train',
-    normalize=True,
+    normalize=False,
     normal_channel=True,
+    add_n_c_info=ADD_N_C
 )
 TEST_DATASET = pfr_dataset.PFRDataset(
     'data/scaled_splited10',
@@ -85,9 +88,14 @@ TEST_DATASET = pfr_dataset.PFRDataset(
     npoints=NUM_POINT,
     features_channels=FEATURES_CHANNELS,
     split='test',
-    normalize=True,
+    normalize=False,
     normal_channel=True,
+    add_n_c_info=ADD_N_C
 )
+
+if ADD_N_C:
+    FEATURES_CHANNELS += 1
+
 print('Database created')
 
 def get_timestamp():
@@ -306,9 +314,9 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
     log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class, dtype=np.float))))
     if WANDB:
-        wandb.log({'mval_ean_loss': loss_sum / float(batch_idx),
+        wandb.log({'val_mean_loss': loss_sum / float(batch_idx),
                    'val_accuracy': total_correct / float(total_seen),
-                   'eval avg class acc: ': np.mean(np.array(total_correct_class) / np.array(total_seen_class, dtype=np.float))},
+                   'val avg class acc: ': np.mean(np.array(total_correct_class) / np.array(total_seen_class, dtype=np.float))},
                     step=step)
     EPOCH_CNT += 1
 
