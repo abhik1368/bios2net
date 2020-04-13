@@ -23,6 +23,7 @@ import tf_util
 import pfr_dataset
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--dataset_path', type=str, help='Path to dataset')
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--model', default='pointnet2_cls_ssg', help='Model name [default: pointnet2_cls_ssg]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
@@ -38,12 +39,13 @@ parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate fo
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--wandb', action='store_true', default=False)
 parser.add_argument('--add_n_c', action='store_true', default=False)
-parser.add_argument('--to_categorical_index', type=list, default=[], help='Indicate which indices correspod to categorical values')
-parser.add_argument('--to_categorical_sizes', type=list, default=[], help='Indicate sizes of subsequent categorical values')
+parser.add_argument('--to_categorical_index', nargs="+", type=int, default=[], help='Indicate which indices correspod to categorical values')
+parser.add_argument('--to_categorical_sizes', nargs="+", type=int, default=[], help='Indicate sizes of subsequent categorical values')
 FLAGS = parser.parse_args()
 
 EPOCH_CNT = 0
 
+DATASET_PATH = FLAGS.dataset_path
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
 MAX_EPOCH = FLAGS.max_epoch
@@ -76,7 +78,7 @@ HOSTNAME = socket.gethostname()
 
 NUM_CLASSES = 198
 TRAIN_DATASET = pfr_dataset.PFRDataset(
-    'data/scaled_splited10',
+    root=DATASET_PATH,
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
     split='train',
@@ -87,7 +89,7 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     to_categorical_sizes=TO_CATEGORICAL_SIZES
 )
 TEST_DATASET = pfr_dataset.PFRDataset(
-    'data/scaled_splited10',
+    root=DATASET_PATH,
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
     split='test',

@@ -151,7 +151,7 @@ class PFRDataset:
         return len(self.datapath)
 
     def num_channel(self):
-        return ds[0][0].shape[1]
+        return self._get_item(0)[0].shape[1]
 
     def reset(self):
         self.idxs = np.arange(0, len(self.datapath))
