@@ -27,7 +27,7 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU
 parser.add_argument('--model', default='pointnet2_cls_ssg', help='Model name [default: pointnet2_cls_ssg]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
-parser.add_argument('--features_channels', type=int, default=4, help='Features channels')
+# parser.add_argument('--features_channels', type=int, default=4, help='Features channels in dataset provided by user')
 parser.add_argument('--max_epoch', type=int, default=251, help='Epoch to run [default: 251]')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
@@ -38,6 +38,8 @@ parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate fo
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--wandb', action='store_true', default=False)
 parser.add_argument('--add_n_c', action='store_true', default=False)
+parser.add_argument('--to_categorical_index', type=list, default=[], help='Indicate which indices correspod to categorical values')
+parser.add_argument('--to_categorical_sizes', type=list, default=[], help='Indicate sizes of subsequent categorical values')
 FLAGS = parser.parse_args()
 
 EPOCH_CNT = 0
@@ -51,9 +53,10 @@ MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
-FEATURES_CHANNELS = FLAGS.features_channels
 WANDB = FLAGS.wandb
 ADD_N_C = FLAGS.add_n_c
+TO_CATEGORICAL_IND = FLAGS.to_categorical_index
+TO_CATEGORICAL_SIZES = FLAGS.to_categorical_sizes
 
 MODEL = importlib.import_module(FLAGS.model) # import network module
 MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
@@ -76,27 +79,28 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     'data/scaled_splited10',
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
-    features_channels=FEATURES_CHANNELS,
     split='train',
     normalize=False,
     normal_channel=True,
-    add_n_c_info=ADD_N_C
+    add_n_c_info=ADD_N_C,
+    to_categorical_indexes=TO_CATEGORICAL_IND,
+    to_categorical_sizes=TO_CATEGORICAL_SIZES
 )
 TEST_DATASET = pfr_dataset.PFRDataset(
     'data/scaled_splited10',
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
-    features_channels=FEATURES_CHANNELS,
     split='test',
     normalize=False,
     normal_channel=True,
-    add_n_c_info=ADD_N_C
+    add_n_c_info=ADD_N_C,
+    to_categorical_indexes=TO_CATEGORICAL_IND,
+    to_categorical_sizes=TO_CATEGORICAL_SIZES
 )
 
-if ADD_N_C:
-    FEATURES_CHANNELS += 1
+FEATURES_CHANNELS = TRAIN_DATASET.num_channel() - 3
 
-print('Database created')
+print(f'Database created with {FEATURES_CHANNELS} features channels')
 
 def get_timestamp():
     timestamp = str(datetime.now(timezone.utc))[:16]

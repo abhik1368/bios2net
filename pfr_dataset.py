@@ -7,12 +7,36 @@ import os.path
 import numpy as np
 import sys
 from glob import glob
+import tensorflow as tf
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import provider
 
+
+AA_INDEX = {
+    'A': 0,
+    'C': 1,
+    'D': 2,
+    'E': 3,
+    'F': 4,
+    'G': 5,
+    'H': 6,
+    'I': 7,
+    'K': 8,
+    'L': 9,
+    'M': 10,
+    'N': 11,
+    'P': 12,
+    'Q': 13,
+    'R': 14,
+    'S': 15,
+    'T': 16,
+    'V': 17,
+    'W': 18,
+    'Y': 19
+}
 
 def pc_normalize(pc):
     l = pc.shape[0]
@@ -29,13 +53,14 @@ class PFRDataset:
         root,
         batch_size=32,
         npoints=1024,
-        features_channels=4,
         split='train',
         normalize=True,
-        normal_channel=False,
+        normal_channel=True,
         cache_size=15000,
         shuffle=None,
-        add_n_c_info=True
+        add_n_c_info=True,
+        to_categorical_indexes=[],
+        to_categorical_sizes=[]
     ):
         self.root = root
         self.batch_size = batch_size
@@ -43,19 +68,18 @@ class PFRDataset:
         self.normalize = normalize
         self.add_n_c_info = add_n_c_info
         if add_n_c_info:
-            self.features_channels = features_channels + 1
             self.n_c = np.expand_dims(np.array(np.arange(npoints) / npoints), axis=1)
-        else:
-            self.features_channels = features_channels
-
         self.classes_names = [i.strip() for i in os.listdir(self.root)]
         self.classes = dict(zip(self.classes_names, range(len(self.classes_names))))
         self.normal_channel = normal_channel
+        self.to_categorical_indexes = to_categorical_indexes
+        self.to_categorical_sizes = to_categorical_sizes
 
         assert split == 'train' or split == 'test'
 
         # list of (shape_name, shape_txt_file_path) tuple
         self.datapath = [(i.split('/')[2], i) for i in glob(self.root + '/*/train/*.npy')]
+
         self.cache_size = cache_size  # how many data points to cache in memory
         self.cache = {}  # from index to (point_set, cls) tuple
 
@@ -90,7 +114,10 @@ class PFRDataset:
             fn = self.datapath[index]
             cls = self.classes[self.datapath[index][0]]
             cls = np.array([cls]).astype(np.int32)
-            point_set = np.load(fn[1])[:, :3 + self.features_channels]
+            if self.normal_channel:
+                point_set = np.load(fn[1])[:, :]
+            else:
+                point_set = np.load(fn[1])[:, :3]
             if len(self.cache) < self.cache_size:
                 self.cache[index] = (point_set, cls)
 
@@ -102,6 +129,10 @@ class PFRDataset:
             ind = np.sort(np.random.choice(ind, self.npoints, replace=True))
 
         point_set = point_set[ind, :]
+
+        for cat_ind, cat_size in zip(self.to_categorical_indexes, self.to_categorical_sizes):
+            cat = tf.keras.utils.to_categorical(point_set[:, cat_ind], num_classes=cat_size)
+            point_set = np.concatenate([point_set[:, :cat_ind], cat, point_set[:, cat_ind+1:]], axis=1)
 
         if self.add_n_c_info:
             point_set = np.concatenate([point_set, self.n_c], axis=1)
@@ -120,10 +151,7 @@ class PFRDataset:
         return len(self.datapath)
 
     def num_channel(self):
-        if self.normal_channel:
-            return 3 + self.features_channels
-        else:
-            return 3
+        return ds[0][0].shape[1]
 
     def reset(self):
         self.idxs = np.arange(0, len(self.datapath))
