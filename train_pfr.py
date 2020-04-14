@@ -317,6 +317,8 @@ def eval_one_epoch(sess, ops, test_writer):
             total_seen_class[l] += 1
             total_correct_class[l] += (pred_val[i] == l)
 
+    print(np.array(total_correct_class)/np.array(total_seen_class, dtype=np.float))
+
     log_string('eval mean loss: %f' % (loss_sum / float(batch_idx)))
     log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
     log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class, dtype=np.float))))
