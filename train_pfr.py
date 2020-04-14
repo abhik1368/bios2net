@@ -28,6 +28,7 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU
 parser.add_argument('--model', default='pointnet2_cls_ssg', help='Model name [default: pointnet2_cls_ssg]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
+parser.add_argument('--num_classes', type=int, default=87, help="Number of classes")
 # parser.add_argument('--features_channels', type=int, default=4, help='Features channels in dataset provided by user')
 parser.add_argument('--max_epoch', type=int, default=251, help='Epoch to run [default: 251]')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
@@ -48,6 +49,7 @@ EPOCH_CNT = 0
 DATASET_PATH = FLAGS.dataset_path
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
+NUM_CLASSES = FLAGS.num_classes
 MAX_EPOCH = FLAGS.max_epoch
 BASE_LEARNING_RATE = FLAGS.learning_rate
 GPU_INDEX = FLAGS.gpu
@@ -76,7 +78,6 @@ BN_DECAY_CLIP = 0.99
 
 HOSTNAME = socket.gethostname()
 
-NUM_CLASSES = 198
 TRAIN_DATASET = pfr_dataset.PFRDataset(
     root=DATASET_PATH,
     batch_size=BATCH_SIZE,
@@ -161,7 +162,7 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, bn_decay=bn_decay)
+            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay)
 
             MODEL.get_loss(pred, labels_pl, end_points)
             losses = tf.get_collection('losses')
