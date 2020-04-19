@@ -228,7 +228,7 @@ def train():
 
         best_acc = -1
         for epoch in range(MAX_EPOCH):
-            log_string(f'\n**** EPOCH {epoch:03d} ****' % (epoch))
+            log_string(f'\n**** EPOCH {epoch:03d} ****')
             sys.stdout.flush()
 
             train_one_epoch(sess, ops, train_writer)
