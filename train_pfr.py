@@ -276,7 +276,7 @@ def train_one_epoch(sess, ops, train_writer):
         if (batch_idx + 1) % 50 == 0:
             accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
             avg_class_acc = np.mean(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0))
-            log_string(f' ---- batch: {batch_idx + 1} ----' % (batch_idx + 1))
+            log_string(f' ---- batch: {batch_idx + 1} ----')
             log_string(f'mean loss: {loss_sum / 50}')
             log_string(f'accuracy: {accuracy}')
             log_string(f'avg_class_acc {avg_class_acc}')
@@ -345,7 +345,7 @@ def eval_one_epoch(sess, ops, test_writer):
     EPOCH_CNT += 1
 
     TEST_DATASET.reset()
-    return total_correct / float(total_seen)
+    return accuracy
 
 
 if __name__ == "__main__":
