@@ -21,6 +21,9 @@ sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import provider
 import tf_util
 import pfr_dataset
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, help='Path to dataset')
@@ -102,6 +105,7 @@ TEST_DATASET = pfr_dataset.PFRDataset(
 )
 
 FEATURES_CHANNELS = TRAIN_DATASET.num_channel() - 3
+LABELS = [i[0] for i in sorted(TRAIN_DATASET.classes.items(), key=lambda item: item[1])]
 
 print(f'Database created with {FEATURES_CHANNELS} features channels')
 
@@ -122,6 +126,14 @@ def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
     LOG_FOUT.flush()
     print(out_str)
+
+def plot_conf_matrix(confusion_matrix, normalize=True):
+    plt.figure(figsize=(20, 19.5))  # width by height
+    if normalize:
+        col_norm = np.sum(confusion_matrix, axis=0)
+        confusion_matrix /= col_norm[None, :]
+    ax = sns.heatmap(confusion_matrix, #annot=True, annot_kws={'size': 3},
+                    fmt='.1f', cbar=False, cmap='binary', linecolor='black', linewidths=0.5)
 
 def get_learning_rate(batch):
     learning_rate = tf.train.exponential_decay(
@@ -238,8 +250,7 @@ def train_one_epoch(sess, ops, train_writer):
     cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TRAIN_DATASET.num_channel()))
     cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
 
-    total_correct = 0
-    total_seen = 0
+    confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
     loss_sum = 0
     batch_idx = 0
     while TRAIN_DATASET.has_next_batch():
@@ -256,19 +267,27 @@ def train_one_epoch(sess, ops, train_writer):
             ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
         train_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 1)
-        correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
-        total_correct += correct
-        total_seen += bsize
         loss_sum += loss_val
-        if (batch_idx+1)%50 == 0:
-            log_string(' ---- batch: %03d ----' % (batch_idx+1))
-            log_string('mean loss: %f' % (loss_sum / 50))
-            log_string('accuracy: %f' % (total_correct / float(total_seen)))
+
+        for i in range(0, bsize):
+            l = batch_label[i]
+            confusion_matrix[pred_val[i], l] += 1
+
+        if (batch_idx + 1) % 50 == 0:
+            accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+            avg_class_acc = np.mean(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0))
+            log_string(f' ---- batch: {batch_idx + 1} ----' % (batch_idx + 1))
+            log_string(f'mean loss: {loss_sum / 50}')
+            log_string(f'accuracy: {accuracy}')
+            log_string(f'avg_class_acc {avg_class_acc}')
             if WANDB:
-                wandb.log({'mean_loss': loss_sum / 50, 'accuracy': total_correct / float(total_seen)}, step=step)
-            total_correct = 0
-            total_seen = 0
-            loss_sum = 0
+                wandb.log(
+                    {'mean_loss': loss_sum / 50, 'accuracy': accuracy,
+                    'avg_class_acc': avg_class_acc,
+                    'confusion_matrix': wandb.plots.HeatMap(LABELS, LABELS, confusion_matrix)
+                    },
+                    step=step
+                )
         batch_idx += 1
 
     TRAIN_DATASET.reset()
@@ -282,13 +301,9 @@ def eval_one_epoch(sess, ops, test_writer):
     cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TEST_DATASET.num_channel()))
     cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
 
-    total_correct = 0
-    total_seen = 0
+    confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
     loss_sum = 0
     batch_idx = 0
-    shape_ious = []
-    total_seen_class = [0 for _ in range(NUM_CLASSES)]
-    total_correct_class = [0 for _ in range(NUM_CLASSES)]
 
     log_string(str(datetime.now()))
     log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
@@ -307,26 +322,26 @@ def eval_one_epoch(sess, ops, test_writer):
             ops['loss'], ops['pred']], feed_dict=feed_dict)
         test_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 1)
-        correct = np.sum(pred_val[0:bsize] == batch_label[0:bsize])
-        total_correct += correct
-        total_seen += bsize
         loss_sum += loss_val
         batch_idx += 1
         for i in range(0, bsize):
             l = batch_label[i]
-            total_seen_class[l] += 1
-            total_correct_class[l] += (pred_val[i] == l)
+            confusion_matrix[pred_val[i], l] += 1
 
-    print(np.array(total_correct_class)/np.array(total_seen_class, dtype=np.float))
-
-    log_string('eval mean loss: %f' % (loss_sum / float(batch_idx)))
-    log_string('eval accuracy: %f'% (total_correct / float(total_seen)))
-    log_string('eval avg class acc: %f' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class, dtype=np.float))))
+    accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    avg_class_acc = np.mean(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0))
+    log_string(f'eval mean loss: {loss_sum / 50}')
+    log_string(f'eval accuracy: {accuracy}')
+    log_string(f'eval avg_class_acc {avg_class_acc}')
     if WANDB:
-        wandb.log({'val_mean_loss': loss_sum / float(batch_idx),
-                   'val_accuracy': total_correct / float(total_seen),
-                   'val avg class acc: ': np.mean(np.array(total_correct_class) / np.array(total_seen_class, dtype=np.float))},
-                    step=step)
+        wandb.log(
+            {'eval_mean_loss': loss_sum / 50, 'accuracy': accuracy,
+            'eval_avg_class_acc': avg_class_acc,
+            'eval_confusion_matrix': wandb.plots.HeatMap(LABELS, LABELS, confusion_matrix)
+            },
+            step=step
+        )
+
     EPOCH_CNT += 1
 
     TEST_DATASET.reset()
