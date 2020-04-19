@@ -252,6 +252,8 @@ def train_one_epoch(sess, ops, train_writer):
     cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
 
     confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
+    top3_correct = 0
+    top3_class_correct = np.zeros((NUM_CLASSES))
     loss_sum = 0
     batch_idx = 0
     while TRAIN_DATASET.has_next_batch():
@@ -267,28 +269,37 @@ def train_one_epoch(sess, ops, train_writer):
         summary, step, _, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['train_op'], ops['loss'], ops['pred']], feed_dict=feed_dict)
         train_writer.add_summary(summary, step)
-        pred_val = np.argmax(pred_val, 1)
+        pred_val_arg = np.argmax(pred_val, 1)
         loss_sum += loss_val
 
         for i in range(0, bsize):
             l = batch_label[i]
-            confusion_matrix[pred_val[i], l] += 1
+            top3 = pred_val[i].argsort()[-3:][::-1]
+            top3_correct += l in top3
+            top3_class_correct[l] += l in top3
+            confusion_matrix[pred_val_arg[i], l] += 1
 
-        if (batch_idx + 1) % 50 == 0:
-            accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
-            avg_class_acc = np.mean(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0))
-            log_string(f' ---- batch: {batch_idx + 1} ----')
-            log_string(f'mean loss: {loss_sum / 50}')
-            log_string(f'accuracy: {accuracy}')
-            log_string(f'avg_class_acc {avg_class_acc}')
-            if WANDB:
-                wandb.log(
-                    {'mean_loss': loss_sum / 50, 'accuracy': accuracy,
-                    'avg_class_acc': avg_class_acc,
-                    'confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
-                    },
-                    step=step
-                )
+    accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    top3_accuracy = top3_correct / np.sum(confusion_matrix)
+    top3_avg_class_acc = np.mean(top3_class_correct / np.sum(confusion_matrix, axis=0))
+    class_acc = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    avg_class_acc = np.mean(np.nan_to_num(class_acc))
+    log_string(f'mean loss: {loss_sum / 50}')
+    log_string(f'accuracy: {accuracy}')
+    log_string(f'avg_class_acc: {avg_class_acc}')
+    log_string(f'top3 acc: {top3_accuracy}')
+    log_string(f'top3 avg_class_acc: {top3_avg_class_acc}')
+    if WANDB:
+        wandb.log(
+            {'mean loss': loss_sum / 50,
+            'accuracy': accuracy,
+            'avg class acc': avg_class_acc,
+            'top3 acc': top3_accuracy,
+            'top3 avg class acc': top3_avg_class_acc,
+            'confusion matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
+            },
+            step=step
+        )
         batch_idx += 1
 
     TRAIN_DATASET.reset()
@@ -304,6 +315,8 @@ def eval_one_epoch(sess, ops, test_writer):
 
     confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
     loss_sum = 0
+    top3_correct = 0
+    top3_class_correct = np.zeros((NUM_CLASSES))
     batch_idx = 0
 
     log_string(str(datetime.now()))
@@ -322,22 +335,35 @@ def eval_one_epoch(sess, ops, test_writer):
         summary, step, loss_val, pred_val = sess.run([ops['merged'], ops['step'],
             ops['loss'], ops['pred']], feed_dict=feed_dict)
         test_writer.add_summary(summary, step)
-        pred_val = np.argmax(pred_val, 1)
+        pred_val_arg = np.argmax(pred_val, 1)
         loss_sum += loss_val
         batch_idx += 1
         for i in range(0, bsize):
             l = batch_label[i]
-            confusion_matrix[pred_val[i], l] += 1
+            top3 = pred_val[i].argsort()[-3:][::-1]
+            top3_correct += l in top3
+            top3_class_correct[l] += l in top3
+            confusion_matrix[pred_val_arg[i], l] += 1
 
     accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
-    avg_class_acc = np.mean(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0))
+    top3_accuracy = top3_correct / np.sum(confusion_matrix)
+    top3_avg_class_acc = np.mean(top3_class_correct / np.sum(confusion_matrix, axis=0))
+    class_acc = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    avg_class_acc = np.mean(np.nan_to_num(class_acc))
+
     log_string(f'eval mean loss: {loss_sum / 50}')
     log_string(f'eval accuracy: {accuracy}')
-    log_string(f'eval avg_class_acc {avg_class_acc}')
+    log_string(f'eval avg class acc {avg_class_acc}')
+    log_string(f'eval top3 acc {top3_accuracy}')
+    log_string(f'eval top3 avg class acc {top3_avg_class_acc}')
+
     if WANDB:
         wandb.log(
-            {'eval_mean_loss': loss_sum / 50, 'accuracy': accuracy,
+            {'eval_mean_loss': loss_sum / 50,
+            'eval_accuracy': accuracy,
             'eval_avg_class_acc': avg_class_acc,
+            'eval_top3_acc': top3_accuracy,
+            'eval_top3_avg_class_acc': top3_avg_class_acc,
             'eval_confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
             },
             step=step
