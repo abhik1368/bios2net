@@ -134,6 +134,7 @@ def plot_conf_matrix(confusion_matrix, normalize=True):
         confusion_matrix /= col_norm[None, :]
     ax = sns.heatmap(confusion_matrix, #annot=True, annot_kws={'size': 3},
                     fmt='.1f', cbar=False, cmap='binary', linecolor='black', linewidths=0.5)
+    return plt
 
 def get_learning_rate(batch):
     learning_rate = tf.train.exponential_decay(
@@ -281,11 +282,10 @@ def train_one_epoch(sess, ops, train_writer):
             log_string(f'accuracy: {accuracy}')
             log_string(f'avg_class_acc {avg_class_acc}')
             if WANDB:
-                plot_conf_matrix(confusion_matrix, normalize=True)
                 wandb.log(
                     {'mean_loss': loss_sum / 50, 'accuracy': accuracy,
                     'avg_class_acc': avg_class_acc,
-                    'confusion_matrix': plt,
+                    'confusion_matrix': wandb.Image(plot_conf_matrix(conf, True)),
                     },
                     step=step
                 )
@@ -335,11 +335,10 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string(f'eval accuracy: {accuracy}')
     log_string(f'eval avg_class_acc {avg_class_acc}')
     if WANDB:
-        plot_conf_matrix(confusion_matrix, normalize=True)
         wandb.log(
             {'eval_mean_loss': loss_sum / 50, 'accuracy': accuracy,
             'eval_avg_class_acc': avg_class_acc,
-            'eval_confusion_matrix': plt,
+            'eval_confusion_matrix': plot_conf_matrix(confusion_matrix, normalize=True),
             },
             step=step
         )
