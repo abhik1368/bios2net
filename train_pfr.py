@@ -281,10 +281,11 @@ def train_one_epoch(sess, ops, train_writer):
             log_string(f'accuracy: {accuracy}')
             log_string(f'avg_class_acc {avg_class_acc}')
             if WANDB:
+                plot_conf_matrix(confusion_matrix, normalize=True)
                 wandb.log(
                     {'mean_loss': loss_sum / 50, 'accuracy': accuracy,
                     'avg_class_acc': avg_class_acc,
-                    'confusion_matrix': wandb.plots.HeatMap(LABELS, LABELS, confusion_matrix)
+                    'confusion_matrix': plt,
                     },
                     step=step
                 )
@@ -334,10 +335,11 @@ def eval_one_epoch(sess, ops, test_writer):
     log_string(f'eval accuracy: {accuracy}')
     log_string(f'eval avg_class_acc {avg_class_acc}')
     if WANDB:
+        plot_conf_matrix(confusion_matrix, normalize=True)
         wandb.log(
             {'eval_mean_loss': loss_sum / 50, 'accuracy': accuracy,
             'eval_avg_class_acc': avg_class_acc,
-            'eval_confusion_matrix': wandb.plots.HeatMap(LABELS, LABELS, confusion_matrix)
+            'eval_confusion_matrix': plt,
             },
             step=step
         )
