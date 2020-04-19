@@ -228,7 +228,7 @@ def train():
 
         best_acc = -1
         for epoch in range(MAX_EPOCH):
-            log_string('**** EPOCH %03d ****' % (epoch))
+            log_string(f'\n**** EPOCH {epoch:03d} ****' % (epoch))
             sys.stdout.flush()
 
             train_one_epoch(sess, ops, train_writer)
@@ -237,7 +237,7 @@ def train():
             # Save the variables to disk.
             if epoch % 10 == 0:
                 save_path = saver.save(sess, os.path.join(LOG_DIR, "model.ckpt"))
-                log_string("Model saved in file: %s" % save_path)
+                log_string(f"Model saved in file: {save_path}")
 
 
 def train_one_epoch(sess, ops, train_writer):
@@ -306,7 +306,7 @@ def eval_one_epoch(sess, ops, test_writer):
     batch_idx = 0
 
     log_string(str(datetime.now()))
-    log_string('---- EPOCH %03d EVALUATION ----'%(EPOCH_CNT))
+    log_string(f'---- EPOCH {EPOCH_CNT:03d} EVALUATION ----')
 
     while TEST_DATASET.has_next_batch():
         batch_data, batch_label = TEST_DATASET.next_batch(augment=False)
