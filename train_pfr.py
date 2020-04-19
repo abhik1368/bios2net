@@ -285,7 +285,7 @@ def train_one_epoch(sess, ops, train_writer):
                 wandb.log(
                     {'mean_loss': loss_sum / 50, 'accuracy': accuracy,
                     'avg_class_acc': avg_class_acc,
-                    'confusion_matrix': wandb.Image(plot_conf_matrix(conf, True)),
+                    'confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
                     },
                     step=step
                 )
