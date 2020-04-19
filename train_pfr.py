@@ -338,7 +338,7 @@ def eval_one_epoch(sess, ops, test_writer):
         wandb.log(
             {'eval_mean_loss': loss_sum / 50, 'accuracy': accuracy,
             'eval_avg_class_acc': avg_class_acc,
-            'eval_confusion_matrix': plot_conf_matrix(confusion_matrix, normalize=True),
+            'eval_confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
             },
             step=step
         )
