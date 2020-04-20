@@ -78,7 +78,7 @@ class PFRDataset:
         assert split == 'train' or split == 'test'
 
         # list of (shape_name, shape_txt_file_path) tuple
-        self.datapath = [(i.split('/')[2], i) for i in glob(self.root + '/*/train/*.npy')]
+        self.datapath = [(i.split('/')[2], i) for i in glob(self.root + f'/*/{split}/*.npy')]
 
         self.cache_size = cache_size  # how many data points to cache in memory
         self.cache = {}  # from index to (point_set, cls) tuple
