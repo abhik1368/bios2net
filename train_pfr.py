@@ -237,7 +237,7 @@ def train():
 
             # Save the variables to disk.
             if acc > best_acc:
-                save_path = saver.save(sess, os.path.join(LOG_DIR, epoch, "model.ckpt"))
+                save_path = saver.save(sess, os.path.join(LOG_DIR, str(epoch), "model.ckpt"))
                 log_string(f"Model saved in file: {save_path}")
 
 
@@ -280,10 +280,11 @@ def train_one_epoch(sess, ops, train_writer):
             top3_class_correct[l] += l in top3
             confusion_matrix[pred_val_arg[i], l] += 1
 
+    col_norm = np.maximum(np.nan_to_num(np.sum(confusion_matrix, axis=0)), 1)
     accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
     top3_accuracy = top3_correct / np.sum(confusion_matrix)
-    top3_avg_class_acc = np.mean(top3_class_correct / np.sum(confusion_matrix, axis=0))
-    class_acc = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    top3_avg_class_acc = np.mean(top3_class_correct / col_norm)
+    class_acc = np.diag(confusion_matrix) / col_norm
     avg_class_acc = np.mean(np.nan_to_num(class_acc))
     log_string(f'mean loss: {loss_sum / 50}')
     log_string(f'accuracy: {accuracy}')
@@ -346,10 +347,11 @@ def eval_one_epoch(sess, ops, test_writer):
             top3_class_correct[l] += l in top3
             confusion_matrix[pred_val_arg[i], l] += 1
 
+    col_norm = np.maximum(np.nan_to_num(np.sum(confusion_matrix, axis=0)), 1)
     accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
     top3_accuracy = top3_correct / np.sum(confusion_matrix)
-    top3_avg_class_acc = np.mean(top3_class_correct / np.sum(confusion_matrix, axis=0))
-    class_acc = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    top3_avg_class_acc = np.mean(top3_class_correct / col_norm)
+    class_acc = np.diag(confusion_matrix) / col_norm
     avg_class_acc = np.mean(np.nan_to_num(class_acc))
 
     log_string(f'eval mean loss: {loss_sum / 50}')
