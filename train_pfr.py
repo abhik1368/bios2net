@@ -38,6 +38,7 @@ parser.add_argument('--batch_size', type=int, default=32, help='Batch Size durin
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
+parser.add_argument('--weight_decay', default=None, type=float, help='Weight decay applied to all dense and conv layers.')
 parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
@@ -58,6 +59,7 @@ BASE_LEARNING_RATE = FLAGS.learning_rate
 GPU_INDEX = FLAGS.gpu
 MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
+WEIGHT_DECAY = FLAGS.weight_decay
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 WANDB = FLAGS.wandb
@@ -175,7 +177,7 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay)
+            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, weight_decay=WEIGHT_DECAY)
 
             MODEL.get_loss(pred, labels_pl, end_points)
             losses = tf.get_collection('losses')

@@ -86,7 +86,7 @@ def sample_and_group_all(xyz, points, use_xyz=True):
     return new_xyz, new_points, idx, grouped_xyz
 
 
-def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_all, is_training, bn_decay, scope, bn=True, pooling='max', knn=False, use_xyz=True, use_nchw=False):
+def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_all, is_training, bn_decay, scope, weight_decay=None, bn=True, pooling='max', knn=False, use_xyz=True, use_nchw=False, ):
     ''' PointNet Set Abstraction (SA) Module
         Input:
             xyz: (batch_size, ndataset, 3) TF tensor
@@ -121,6 +121,7 @@ def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_al
                                         padding='VALID', stride=[1,1],
                                         bn=bn, is_training=is_training,
                                         scope='conv%d'%(i), bn_decay=bn_decay,
+                                        weight_decay=weight_decay,
                                         data_format=data_format)
         if use_nchw: new_points = tf.transpose(new_points, [0,2,3,1])
 
@@ -149,13 +150,14 @@ def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_al
                                             padding='VALID', stride=[1,1],
                                             bn=bn, is_training=is_training,
                                             scope='conv_post_%d'%(i), bn_decay=bn_decay,
+                                            weight_decay=weight_decay,
                                             data_format=data_format)
             if use_nchw: new_points = tf.transpose(new_points, [0,2,3,1])
 
         new_points = tf.squeeze(new_points, [2]) # (batch_size, npoints, mlp2[-1])
         return new_xyz, new_points, idx
 
-def pointnet_sa_module_msg(xyz, points, npoint, radius_list, nsample_list, mlp_list, is_training, bn_decay, scope, bn=True, use_xyz=True, use_nchw=False):
+def pointnet_sa_module_msg(xyz, points, npoint, radius_list, nsample_list, mlp_list, is_training, bn_decay, scope, weight_decay=None, bn=True, use_xyz=True, use_nchw=False):
     ''' PointNet Set Abstraction (SA) module with Multi-Scale Grouping (MSG)
         Input:
             xyz: (batch_size, ndataset, 3) TF tensor
@@ -190,7 +192,7 @@ def pointnet_sa_module_msg(xyz, points, npoint, radius_list, nsample_list, mlp_l
             for j,num_out_channel in enumerate(mlp_list[i]):
                 grouped_points = tf_util.conv2d(grouped_points, num_out_channel, [1,1],
                                                 padding='VALID', stride=[1,1], bn=bn, is_training=is_training,
-                                                scope='conv%d_%d'%(i,j), bn_decay=bn_decay)
+                                                scope='conv%d_%d'%(i,j), bn_decay=bn_decay, weight_decay=weight_decay)
             if use_nchw: grouped_points = tf.transpose(grouped_points, [0,2,3,1])
             new_points = tf.reduce_max(grouped_points, axis=[2])
             new_points_list.append(new_points)
