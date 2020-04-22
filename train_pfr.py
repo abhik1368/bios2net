@@ -39,6 +39,7 @@ parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial 
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
 parser.add_argument('--weight_decay', default=None, type=float, help='Weight decay applied to all dense and conv layers.')
+parser.add_argument('--shuffle_points', default=True, type=bool, help='Whether to shuffle points within examples.')
 parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
@@ -60,6 +61,7 @@ GPU_INDEX = FLAGS.gpu
 MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
 WEIGHT_DECAY = FLAGS.weight_decay
+SHUFFLE_POINTS = FLAGS.shuffle_points
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 WANDB = FLAGS.wandb
@@ -90,6 +92,7 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     split='train',
     normalize=False,
     normal_channel=True,
+    shuffle_points=SHUFFLE_POINTS,
     add_n_c_info=ADD_N_C,
     to_categorical_indexes=TO_CATEGORICAL_IND,
     to_categorical_sizes=TO_CATEGORICAL_SIZES

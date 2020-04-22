@@ -58,6 +58,7 @@ class PFRDataset:
         normal_channel=True,
         cache_size=15000,
         shuffle=None,
+        shuffle_points=True,
         add_n_c_info=True,
         to_categorical_indexes=[],
         to_categorical_sizes=[]
@@ -72,6 +73,7 @@ class PFRDataset:
         self.classes_names = [i.strip() for i in os.listdir(self.root)]
         self.classes = dict(zip(self.classes_names, range(len(self.classes_names))))
         self.normal_channel = normal_channel
+        self.shuffle_points = shuffle_points
         self.to_categorical_indexes = to_categorical_indexes
         self.to_categorical_sizes = to_categorical_sizes
 
@@ -105,7 +107,10 @@ class PFRDataset:
         jittered_data = provider.shift_point_cloud(jittered_data)
         jittered_data = provider.jitter_point_cloud(jittered_data)
         rotated_data[:, :, 0:3] = jittered_data
-        return provider.shuffle_points(rotated_data)
+        if self.shuffle_points:
+            return provider.shuffle_points(rotated_data)
+        else:
+            return rotated_data
 
     def _get_item(self, index):
         if index in self.cache:
