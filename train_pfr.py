@@ -40,6 +40,7 @@ parser.add_argument('--momentum', type=float, default=0.9, help='Initial learnin
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
 parser.add_argument('--weight_decay', default=None, type=float, help='Weight decay applied to all dense and conv layers.')
 parser.add_argument('--shuffle_points', default=True, type=bool, help='Whether to shuffle points within examples.')
+parser.add_argument('--knn', action='store_true', default=False, help='Whether to use knn for point sampling')
 parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
@@ -62,6 +63,7 @@ MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
 WEIGHT_DECAY = FLAGS.weight_decay
 SHUFFLE_POINTS = FLAGS.shuffle_points
+KNN = FLAGS.knn
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 WANDB = FLAGS.wandb
@@ -180,7 +182,7 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, weight_decay=WEIGHT_DECAY)
+            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, weight_decay=WEIGHT_DECAY, knn=KNN)
 
             MODEL.get_loss(pred, labels_pl, end_points)
             losses = tf.get_collection('losses')
