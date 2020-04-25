@@ -365,6 +365,39 @@ def fully_connected(inputs,
     return outputs
 
 
+def inception(inputs,
+              num_output_channels,
+              scope,
+              kernel_sizes=[1, 3, 5, 7],
+              kernels_fraction=[3, 2, 2, 1],
+              padding='SAME',
+              data_format='NHWC',
+              use_xavier=True,
+              stddev=1e-3,
+              weight_decay=None,
+              activation_fn=tf.nn.relu,
+              bn=False,
+              bn_decay=None,
+              is_training=None):
+  with tf.variable_scope(scope) as sc:
+    outputs = []
+    ker_sum = sum(kernels_fraction)
+    for kernel_size, kernel_fraction in zip(kernel_sizes, kernels_fraction):
+      out = conv2d(inputs,
+                  int(num_output_channels * kernel_fraction / ker_sum),
+                  [1, kernel_size],
+                  padding='SAME', stride=[1, 1],
+                  bn=bn, is_training=is_training,
+                  scope='conv_%d' % (kernel_size), bn_decay=bn_decay,
+                  weight_decay=weight_decay,
+                  data_format=data_format)
+      outputs.append(out)
+    if data_format == 'NHWC':
+      return tf.concat(outputs, axis=3)
+    elif data_format == 'NCHW':
+      return tf.concat(outputs, axis=1)
+
+
 def max_pool2d(inputs,
                kernel_size,
                scope,

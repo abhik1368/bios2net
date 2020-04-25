@@ -38,8 +38,9 @@ parser.add_argument('--batch_size', type=int, default=32, help='Batch Size durin
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
+parser.add_argument('--inception', default=False, action='store_true')
 parser.add_argument('--weight_decay', default=None, type=float, help='Weight decay applied to all dense and conv layers.')
-parser.add_argument('--shuffle_points', default=True, type=bool, help='Whether to shuffle points within examples.')
+parser.add_argument('--no_shuffle_points', action='store_true', help='Whether to shuffle points within examples.')
 parser.add_argument('--knn', action='store_true', default=False, help='Whether to use knn for point sampling')
 parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
@@ -52,6 +53,8 @@ FLAGS = parser.parse_args()
 
 EPOCH_CNT = 0
 
+print('PARAMETERS:', FLAGS)
+
 DATASET_PATH = FLAGS.dataset_path
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
@@ -61,8 +64,9 @@ BASE_LEARNING_RATE = FLAGS.learning_rate
 GPU_INDEX = FLAGS.gpu
 MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
+INCEPTION = FLAGS.inception
 WEIGHT_DECAY = FLAGS.weight_decay
-SHUFFLE_POINTS = FLAGS.shuffle_points
+NO_SHUFFLE_POINTS = FLAGS.no_shuffle_points
 KNN = FLAGS.knn
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
@@ -94,7 +98,7 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     split='train',
     normalize=False,
     normal_channel=True,
-    shuffle_points=SHUFFLE_POINTS,
+    shuffle_points=not NO_SHUFFLE_POINTS,
     add_n_c_info=ADD_N_C,
     to_categorical_indexes=TO_CATEGORICAL_IND,
     to_categorical_sizes=TO_CATEGORICAL_SIZES
@@ -182,7 +186,7 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, weight_decay=WEIGHT_DECAY, knn=KNN)
+            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, inception=INCEPTION, weight_decay=WEIGHT_DECAY, knn=KNN)
 
             MODEL.get_loss(pred, labels_pl, end_points)
             losses = tf.get_collection('losses')
