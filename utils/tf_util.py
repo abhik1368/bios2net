@@ -630,7 +630,7 @@ def batch_norm_for_conv3d(inputs, is_training, bn_decay, scope):
 def dropout(inputs,
             is_training,
             scope,
-            keep_prob=0.5,
+            rate=0.5,
             noise_shape=None):
   """ Dropout layer.
 
@@ -638,7 +638,7 @@ def dropout(inputs,
     inputs: tensor
     is_training: boolean tf.Variable
     scope: string
-    keep_prob: float in [0,1]
+    rate: float in [0,1]
     noise_shape: list of ints
 
   Returns:
@@ -646,6 +646,6 @@ def dropout(inputs,
   """
   with tf.variable_scope(scope) as sc:
     outputs = tf.cond(is_training,
-                      lambda: tf.nn.dropout(inputs, keep_prob, noise_shape),
+                      lambda: tf.nn.dropout(inputs, rate, noise_shape),
                       lambda: inputs)
     return outputs
