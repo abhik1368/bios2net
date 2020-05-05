@@ -250,6 +250,7 @@ def train():
             if acc > best_acc:
                 save_path = saver.save(sess, os.path.join(LOG_DIR, str(epoch), "model.ckpt"))
                 log_string(f"Model saved in file: {save_path}")
+                best_acc = acc
 
 
 
