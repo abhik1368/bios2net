@@ -49,6 +49,8 @@ parser.add_argument('--wandb', action='store_true', default=False)
 parser.add_argument('--add_n_c', action='store_true', default=False)
 parser.add_argument('--to_categorical_index', nargs="+", type=int, default=[], help='Indicate which indices correspod to categorical values')
 parser.add_argument('--to_categorical_sizes', nargs="+", type=int, default=[], help='Indicate sizes of subsequent categorical values')
+parser.add_argument('--omit_parameters_ranges', nargs='+', type=int, default=[], help='Ranges of indices of parameters to omit in min, max order.')
+
 FLAGS = parser.parse_args()
 
 EPOCH_CNT = 0
@@ -74,6 +76,10 @@ WANDB = FLAGS.wandb
 ADD_N_C = FLAGS.add_n_c
 TO_CATEGORICAL_IND = FLAGS.to_categorical_index
 TO_CATEGORICAL_SIZES = FLAGS.to_categorical_sizes
+OMIT_PARAMETERS_RANGES = FLAGS.omit_parameters_ranges
+
+if len(OMIT_PARAMETERS_RANGES) % 2 != 0:
+    raise Exception('You should provide even number for flag omit_parameters_range')
 
 MODEL = importlib.import_module(FLAGS.model) # import network module
 MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
@@ -100,6 +106,7 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     normal_channel=True,
     shuffle_points=not NO_SHUFFLE_POINTS,
     add_n_c_info=ADD_N_C,
+    omit_parameters_ranges=OMIT_PARAMETERS_RANGES,
     to_categorical_indexes=TO_CATEGORICAL_IND,
     to_categorical_sizes=TO_CATEGORICAL_SIZES
 )
@@ -111,6 +118,7 @@ TEST_DATASET = pfr_dataset.PFRDataset(
     normalize=False,
     normal_channel=True,
     add_n_c_info=ADD_N_C,
+    omit_parameters_ranges=OMIT_PARAMETERS_RANGES,
     to_categorical_indexes=TO_CATEGORICAL_IND,
     to_categorical_sizes=TO_CATEGORICAL_SIZES
 )

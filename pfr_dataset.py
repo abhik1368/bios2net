@@ -60,6 +60,7 @@ class PFRDataset:
         shuffle=None,
         shuffle_points=True,
         add_n_c_info=True,
+        omit_parameters_ranges=[],
         to_categorical_indexes=[],
         to_categorical_sizes=[]
     ):
@@ -74,6 +75,7 @@ class PFRDataset:
         self.classes = dict(zip(self.classes_names, range(len(self.classes_names))))
         self.normal_channel = normal_channel
         self.shuffle_points = shuffle_points
+        self.omit_parameters_ranges = omit_parameters_ranges
         self.to_categorical_indexes = to_categorical_indexes
         self.to_categorical_sizes = to_categorical_sizes
 
@@ -121,6 +123,10 @@ class PFRDataset:
             cls = np.array([cls]).astype(np.int32)
             if self.normal_channel:
                 point_set = np.load(fn[1])[:, :]
+                for i in range(len(self.omit_parameters_ranges) - 1, -1, -2):
+                    point_set = np.concatenate(
+                        [point_set[:, :self.omit_parameters_ranges[i - 1]], point_set[:, self.omit_parameters_ranges[i]:]], axis=1
+                    )
             else:
                 point_set = np.load(fn[1])[:, :3]
             if len(self.cache) < self.cache_size:
