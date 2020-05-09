@@ -59,6 +59,10 @@ class PFRDataset:
         cache_size=15000,
         shuffle=None,
         shuffle_points=True,
+        scale_low=0.7,
+        scale_high=1.3,
+        shift_range=0.2,
+        jitter_sigma=0.01,
         add_n_c_info=True,
         omit_parameters_ranges=[],
         to_categorical_indexes=[],
@@ -75,6 +79,10 @@ class PFRDataset:
         self.classes = dict(zip(self.classes_names, range(len(self.classes_names))))
         self.normal_channel = normal_channel
         self.shuffle_points = shuffle_points
+        self.scale_low = scale_low
+        self.scale_high = scale_high
+        self.shift_range = shift_range
+        self.jitter_sigma = jitter_sigma
         self.omit_parameters_ranges = omit_parameters_ranges
         self.to_categorical_indexes = to_categorical_indexes
         self.to_categorical_sizes = to_categorical_sizes
@@ -105,9 +113,9 @@ class PFRDataset:
             rotated_data = provider.rotate_point_cloud(batch_data)
             rotated_data = provider.rotate_perturbation_point_cloud(rotated_data)
 
-        jittered_data = provider.random_scale_point_cloud(rotated_data[:, :, 0:3])
-        jittered_data = provider.shift_point_cloud(jittered_data)
-        jittered_data = provider.jitter_point_cloud(jittered_data)
+        jittered_data = provider.random_scale_point_cloud(rotated_data[:, :, 0:3], scale_low=self.scale_low, scale_high=self.scale_high)
+        jittered_data = provider.shift_point_cloud(jittered_data, shift_range=self.shift_range)
+        jittered_data = provider.jitter_point_cloud(jittered_data, sigma=self.jitter_sigma, clip=0.1)
         rotated_data[:, :, 0:3] = jittered_data
         if self.shuffle_points:
             return provider.shuffle_points(rotated_data)
