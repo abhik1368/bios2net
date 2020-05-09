@@ -123,6 +123,7 @@ def conv2d(inputs,
            num_output_channels,
            kernel_size,
            scope,
+           return_kernel=False,
            stride=[1, 1],
            padding='SAME',
            data_format='NHWC',
@@ -184,6 +185,8 @@ def conv2d(inputs,
 
       if activation_fn is not None:
         outputs = activation_fn(outputs)
+      if return_kernel:
+        return outputs, kernel
       return outputs
 
 
@@ -382,20 +385,23 @@ def inception(inputs,
   with tf.variable_scope(scope) as sc:
     outputs = []
     ker_sum = sum(kernels_fraction)
+    kernels = []
     for kernel_size, kernel_fraction in zip(kernel_sizes, kernels_fraction):
-      out = conv2d(inputs,
+      out, ker = conv2d(inputs,
                   int(num_output_channels * kernel_fraction / ker_sum),
                   [1, kernel_size],
+                  return_kernel=True,
                   padding='SAME', stride=[1, 1],
                   bn=bn, is_training=is_training,
                   scope='conv_%d' % (kernel_size), bn_decay=bn_decay,
                   weight_decay=weight_decay,
                   data_format=data_format)
+      kernels.append(ker)
       outputs.append(out)
     if data_format == 'NHWC':
-      return tf.concat(outputs, axis=3)
+      return tf.concat(outputs, axis=3), kernels
     elif data_format == 'NCHW':
-      return tf.concat(outputs, axis=1)
+      return tf.concat(outputs, axis=1), kernels
 
 
 def max_pool2d(inputs,
