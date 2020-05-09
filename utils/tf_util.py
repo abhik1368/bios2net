@@ -371,7 +371,8 @@ def fully_connected(inputs,
 def inception(inputs,
               num_output_channels,
               scope,
-              kernel_sizes=[1, 3, 5, 7],
+              kernel_heights=[1, 1, 1, 1],
+              kernel_widths=[1, 3, 5, 7],
               kernels_fraction=[3, 2, 2, 1],
               padding='SAME',
               data_format='NHWC',
@@ -379,6 +380,7 @@ def inception(inputs,
               stddev=1e-3,
               weight_decay=None,
               activation_fn=tf.nn.relu,
+              return_kernel=False,
               bn=False,
               bn_decay=None,
               is_training=None):
@@ -386,22 +388,30 @@ def inception(inputs,
     outputs = []
     ker_sum = sum(kernels_fraction)
     kernels = []
-    for kernel_size, kernel_fraction in zip(kernel_sizes, kernels_fraction):
+    for kernel_height, kernel_width, kernel_fraction in zip(kernel_heights, kernel_widths, kernels_fraction):
       out, ker = conv2d(inputs,
                   int(num_output_channels * kernel_fraction / ker_sum),
-                  [1, kernel_size],
+                  [kernel_height, kernel_width],
                   return_kernel=True,
                   padding='SAME', stride=[1, 1],
                   bn=bn, is_training=is_training,
-                  scope='conv_%d' % (kernel_size), bn_decay=bn_decay,
+                  # scope='conv_%d' % (kernel_width),
+                  scope=f'{scope}_{kernel_height}x{kernel_width}',
+                  bn_decay=bn_decay,
                   weight_decay=weight_decay,
                   data_format=data_format)
       kernels.append(ker)
       outputs.append(out)
     if data_format == 'NHWC':
-      return tf.concat(outputs, axis=3), kernels
+      if return_kernel:
+        return tf.concat(outputs, axis=3), kernels
+      else:
+        return tf.concat(outputs, axis=3)
     elif data_format == 'NCHW':
-      return tf.concat(outputs, axis=1), kernels
+      if return_kernel:
+        return tf.concat(outputs, axis=1), kernels
+      else:
+        return tf.concat(outputs, axis=1)
 
 
 def max_pool2d(inputs,
