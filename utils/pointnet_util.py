@@ -124,6 +124,7 @@ def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_al
                                                bn=bn, is_training=is_training,
                                                scope='conv%d' % (i), bn_decay=bn_decay,
                                                weight_decay=weight_decay,
+                                               return_kernel=True,
                                                data_format=data_format)
                 if i == 0:
                     kernel = ker
