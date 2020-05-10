@@ -39,7 +39,7 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
                             kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
                             kernels_fraction=[2, 2, 2, 2],
                             return_kernel=True,
-                            weight_decay=weight_decay, bn=True, bn_decay=bn_decay,
+                            bn=True, bn_decay=bn_decay,
                             is_training=is_training)
     end_points['conv_ker'] = conv_ker
     net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='seq_maxpool_1',
@@ -47,35 +47,35 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     net = tf_util.inception(net, 64, scope='seq_conv2',
                             kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
                             kernels_fraction=[3, 2, 2, 1],
-                            weight_decay=weight_decay, bn=True, bn_decay=bn_decay,
+                            bn=True, bn_decay=bn_decay,
                             is_training=is_training)
     net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='seq_maxpool_2',
                             stride=[2,1], padding='SAME')
     net = tf_util.inception(net, 128, scope='seq_conv3',
                             kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
                             kernels_fraction=[3, 2, 2, 1],
-                            weight_decay=weight_decay, bn=True, bn_decay=bn_decay,
+                            bn=True, bn_decay=bn_decay,
                             is_training=is_training)
     net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='seq_maxpool_3',
                             stride=[2,1], padding='SAME')
     net = tf_util.inception(net, 256, scope='seq_conv4',
                             kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
                             kernels_fraction=[3, 2, 2, 1],
-                            weight_decay=weight_decay, bn=True, bn_decay=bn_decay,
+                            bn=True, bn_decay=bn_decay,
                             is_training=is_training)
     net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='seq_maxpool_4',
                             stride=[2,1], padding='SAME')
     net = tf_util.inception(net, 512, scope='seq_conv5',
                             kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
                             kernels_fraction=[3, 2, 2, 1],
-                            weight_decay=weight_decay, bn=True, bn_decay=bn_decay,
+                            bn=True, bn_decay=bn_decay,
                             is_training=is_training)
     net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='seq_maxpool_5',
                             stride=[2,1], padding='SAME')
     net = tf_util.inception(net, 1024, scope='seq_conv6',
                             kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
                             kernels_fraction=[3, 2, 2, 1],
-                            weight_decay=weight_decay, bn=True, bn_decay=bn_decay,
+                            bn=True, bn_decay=bn_decay,
                             is_training=is_training)
 
     net = tf_util.avg_pool2d(net, kernel_size=[32, 1], scope='seq_global_avg_pool', stride=[32,1], padding='SAME')
@@ -89,10 +89,10 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     # Set abstraction layers
     # Note: When using NCHW for layer 2, we see increased GPU memory usage (in TF1.4).
     # So we only use NCHW for layer 1 until this issue can be resolved.
-    l1_xyz, l1_points, l1_indices, pt_ker = pointnet_sa_module(l0_xyz, l0_points, npoint=512, radius=0.2, nsample=32, mlp=[64,64,128], mlp2=None, group_all=False, is_training=is_training, bn_decay=bn_decay, scope='layer1', weight_decay=weight_decay, use_nchw=True)
+    l1_xyz, l1_points, l1_indices, pt_ker = pointnet_sa_module(l0_xyz, l0_points, npoint=512, radius=0.2, nsample=32, mlp=[64,64,128], mlp2=None, group_all=False, is_training=is_training, bn_decay=bn_decay, scope='layer1', use_nchw=True)
     end_points['pt_ker'] = pt_ker
-    l2_xyz, l2_points, l2_indices, _ = pointnet_sa_module(l1_xyz, l1_points, npoint=128, radius=0.4, nsample=64, mlp=[128,128,256], mlp2=None, group_all=False, is_training=is_training, bn_decay=bn_decay, scope='layer2', weight_decay=weight_decay)
-    l3_xyz, l3_points, l3_indices, _ = pointnet_sa_module(l2_xyz, l2_points, npoint=None, radius=None, nsample=None, mlp=[256,512,1024], mlp2=None, group_all=True, is_training=is_training, bn_decay=bn_decay, scope='layer3', weight_decay=weight_decay)
+    l2_xyz, l2_points, l2_indices, _ = pointnet_sa_module(l1_xyz, l1_points, npoint=128, radius=0.4, nsample=64, mlp=[128,128,256], mlp2=None, group_all=False, is_training=is_training, bn_decay=bn_decay, scope='layer2')
+    l3_xyz, l3_points, l3_indices, _ = pointnet_sa_module(l2_xyz, l2_points, npoint=None, radius=None, nsample=None, mlp=[256,512,1024], mlp2=None, group_all=True, is_training=is_training, bn_decay=bn_decay, scope='layer3')
     net = tf.reshape(l3_points, [batch_size, -1])
 
     net = tf.concat([conv_net, net], axis=-1)
