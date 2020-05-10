@@ -323,7 +323,7 @@ def train_one_epoch(sess, ops, train_writer):
             step=step
         )
         batch_idx += 1
-
+    plt.close()
     TRAIN_DATASET.reset()
 
 def eval_one_epoch(sess, ops, test_writer):
@@ -393,7 +393,7 @@ def eval_one_epoch(sess, ops, test_writer):
         )
 
     EPOCH_CNT += 1
-
+    plt.close()
     TEST_DATASET.reset()
     return accuracy
 
