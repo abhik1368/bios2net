@@ -139,7 +139,7 @@ INIT_TIMESTAMP = get_timestamp()
 
 if WANDB:
     import wandb
-    wandb.init(project='pointnet_pfr', name=INIT_TIMESTAMP)
+    wandb.init(project='pointnet_pfr', name=LOG_DIR if LOG_DIR else INIT_TIMESTAMP)
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -319,9 +319,6 @@ def train_one_epoch(sess, ops, train_writer):
             'top3 acc': top3_accuracy,
             'top3 avg class acc': top3_avg_class_acc,
             'confusion matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
-            'confusion matrix table': wandb.Table(
-                columns=TRAIN_DATASET.classes_names,
-                rows=TRAIN_DATASET.classes_names, data=confusion_matrix.astype(str))
             },
             step=step
         )
@@ -371,7 +368,10 @@ def eval_one_epoch(sess, ops, test_writer):
             confusion_matrix[pred_val_arg[i], l] += 1
 
     col_norm = np.maximum(np.nan_to_num(np.sum(confusion_matrix, axis=0)), 1)
+    row_norm = np.maximum(np.nan_to_num(np.sum(confusion_matrix, axis=1)), 1)
     accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    precision = np.round(np.diag(confusion_matrix) / row_norm, 2)
+    recall = np.round(np.diag(confusion_matrix) / col_norm, 2)
     top3_accuracy = top3_correct / np.sum(confusion_matrix)
     top3_avg_class_acc = np.mean(top3_class_correct / col_norm)
     class_acc = np.diag(confusion_matrix) / col_norm
@@ -391,9 +391,14 @@ def eval_one_epoch(sess, ops, test_writer):
             'eval_top3_acc': top3_accuracy,
             'eval_top3_avg_class_acc': top3_avg_class_acc,
             'eval_confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
-            'eval confusion matrix table': wandb.Table(
+            'eval_avg_recall': np.mean(recall),
+            'eval_avg_precision': np.mean(precision),
+            'eval_precision': wandb.Table(
                 columns=TRAIN_DATASET.classes_names,
-                rows=TRAIN_DATASET.classes_names, data=confusion_matrix.astype(str))
+                data=[precision.astype(str).tolist()]),
+            'eval_recall': wandb.Table(
+                columns=TRAIN_DATASET.classes_names,
+                data=[recall.astype(str).tolist()]),
             },
             step=step
         )
