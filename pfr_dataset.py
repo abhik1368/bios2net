@@ -14,30 +14,6 @@ ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import provider
 
-
-AA_INDEX = {
-    'A': 0,
-    'C': 1,
-    'D': 2,
-    'E': 3,
-    'F': 4,
-    'G': 5,
-    'H': 6,
-    'I': 7,
-    'K': 8,
-    'L': 9,
-    'M': 10,
-    'N': 11,
-    'P': 12,
-    'Q': 13,
-    'R': 14,
-    'S': 15,
-    'T': 16,
-    'V': 17,
-    'W': 18,
-    'Y': 19
-}
-
 def pc_normalize(pc):
     l = pc.shape[0]
     centroid = np.mean(pc, axis=0)
@@ -75,7 +51,7 @@ class PFRDataset:
         self.add_n_c_info = add_n_c_info
         if add_n_c_info:
             self.n_c = np.expand_dims(np.array(np.arange(npoints) / npoints), axis=1)
-        self.classes_names = [i.strip() for i in os.listdir(self.root)]
+        self.classes_names = ['.'.join(j) for j in sorted([i.split('.') for i in os.listdir(self.root)], key=lambda x: (x[0], int(x[1])))]
         self.classes = dict(zip(self.classes_names, range(len(self.classes_names))))
         self.normal_channel = normal_channel
         self.shuffle_points = shuffle_points

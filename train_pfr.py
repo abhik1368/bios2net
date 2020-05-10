@@ -319,6 +319,9 @@ def train_one_epoch(sess, ops, train_writer):
             'top3 acc': top3_accuracy,
             'top3 avg class acc': top3_avg_class_acc,
             'confusion matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
+            'confusion matrix table': wandb.Table(
+                columns=TRAIN_DATASET.classes_names,
+                rows=TRAIN_DATASET.classes_names, data=confusion_matrix.astype(str))
             },
             step=step
         )
@@ -388,6 +391,9 @@ def eval_one_epoch(sess, ops, test_writer):
             'eval_top3_acc': top3_accuracy,
             'eval_top3_avg_class_acc': top3_avg_class_acc,
             'eval_confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
+            'eval confusion matrix table': wandb.Table(
+                columns=TRAIN_DATASET.classes_names,
+                rows=TRAIN_DATASET.classes_names, data=confusion_matrix.astype(str))
             },
             step=step
         )
