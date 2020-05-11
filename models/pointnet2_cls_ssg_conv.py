@@ -78,7 +78,7 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
                             bn=True, bn_decay=bn_decay,
                             is_training=is_training)
 
-    net = tf_util.avg_pool2d(net, kernel_size=[32, 1], scope='seq_global_avg_pool', stride=[32,1], padding='SAME')
+    net = tf_util.avg_pool2d(net, kernel_size=[net.shape[1], 1], scope='seq_global_avg_pool', stride=[net.shape[1],1], padding='SAME')
 
     # # Symmetric function: max pooling
     # net = tf_util.max_pool2d(net, [num_point,1],
