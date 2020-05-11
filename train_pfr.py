@@ -31,22 +31,20 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU
 parser.add_argument('--model', default='pointnet2_cls_ssg', help='Model name [default: pointnet2_cls_ssg]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
-parser.add_argument('--num_classes', type=int, default=87, help="Number of classes")
-# parser.add_argument('--features_channels', type=int, default=4, help='Features channels in dataset provided by user')
-parser.add_argument('--max_epoch', type=int, default=251, help='Epoch to run [default: 251]')
+parser.add_argument('--max_epoch', type=int, default=800, help='Epoch to run [default: 251]')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
-parser.add_argument('--inception', default=False, action='store_true')
-parser.add_argument('--weight_decay', default=None, type=float, help='Weight decay applied to all dense and conv layers.')
+parser.add_argument('--inception', default=True, action='store_true')
+parser.add_argument('--weight_decay', default=0.001, type=float, help='Weight decay applied to all dense and conv layers.')
 parser.add_argument('--no_shuffle_points', action='store_true', help='Whether to shuffle points within examples.')
 parser.add_argument('--knn', action='store_true', default=False, help='Whether to use knn for point sampling')
 parser.add_argument('--decay_step', type=int, default=200000, help='Decay step for lr decay [default: 200000]')
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--wandb', action='store_true', default=False)
-parser.add_argument('--add_n_c', action='store_true', default=False)
+parser.add_argument('--add_n_c', action='store_true', default=True)
 parser.add_argument('--to_categorical_index', nargs="+", type=int, default=[], help='Indicate which indices correspod to categorical values')
 parser.add_argument('--to_categorical_sizes', nargs="+", type=int, default=[], help='Indicate sizes of subsequent categorical values')
 parser.add_argument('--omit_parameters_ranges', nargs='+', type=int, default=[], help='Ranges of indices of parameters to omit in min, max order.')
@@ -60,7 +58,6 @@ print('PARAMETERS:', FLAGS)
 DATASET_PATH = FLAGS.dataset_path
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
-NUM_CLASSES = FLAGS.num_classes
 MAX_EPOCH = FLAGS.max_epoch
 BASE_LEARNING_RATE = FLAGS.learning_rate
 GPU_INDEX = FLAGS.gpu
@@ -123,10 +120,12 @@ TEST_DATASET = pfr_dataset.PFRDataset(
     to_categorical_sizes=TO_CATEGORICAL_SIZES
 )
 
+assert len(TEST_DATASET.classes_names) == len(TRAIN_DATASET.classes_names)
+NUM_CLASSES = len(TEST_DATASET.classes_names)
 FEATURES_CHANNELS = TRAIN_DATASET.num_channel() - 3
 LABELS = [i[0] for i in sorted(TRAIN_DATASET.classes.items(), key=lambda item: item[1])]
 
-print(f'Database created with {FEATURES_CHANNELS} features channels')
+print(f'Database created with {FEATURES_CHANNELS + 3} channels')
 
 def get_timestamp():
     timestamp = str(datetime.now(timezone.utc))[:16]

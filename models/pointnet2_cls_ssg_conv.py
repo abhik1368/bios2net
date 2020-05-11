@@ -99,11 +99,11 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     end_points['feature_vector'] = net
 
     # Fully connected layers
-    net = tf_util.dropout(net, rate=0.5, is_training=is_training, scope='dp1') # my change
+    net = tf_util.dropout(net, rate=0.6, is_training=is_training, scope='dp1') # my change
     net = tf_util.fully_connected(net, 512, bn=True, is_training=is_training, scope='fc1', bn_decay=bn_decay, weight_decay=weight_decay)
-    net = tf_util.dropout(net, rate=0.5, is_training=is_training, scope='dp1')
+    net = tf_util.dropout(net, rate=0.6, is_training=is_training, scope='dp1')
     net = tf_util.fully_connected(net, 256, bn=True, is_training=is_training, scope='fc2', bn_decay=bn_decay, weight_decay=weight_decay)
-    net = tf_util.dropout(net, rate=0.5, is_training=is_training, scope='dp2')
+    net = tf_util.dropout(net, rate=0.6, is_training=is_training, scope='dp2')
     net = tf_util.fully_connected(net, n_classes, activation_fn=None, scope='fc3')
 
     return net, end_points
