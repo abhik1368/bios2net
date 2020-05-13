@@ -44,7 +44,7 @@ parser.add_argument('--decay_step', type=int, default=200000, help='Decay step f
 parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--wandb', action='store_true', default=False)
-parser.add_argument('--add_n_c', action='store_true', default=True)
+parser.add_argument('--dont_add_n_c', action='store_true', default=False)
 parser.add_argument('--to_categorical_index', nargs="+", type=int, default=[], help='Indicate which indices correspod to categorical values')
 parser.add_argument('--to_categorical_sizes', nargs="+", type=int, default=[], help='Indicate sizes of subsequent categorical values')
 parser.add_argument('--omit_parameters_ranges', nargs='+', type=int, default=[], help='Ranges of indices of parameters to omit in min, max order.')
@@ -70,7 +70,7 @@ KNN = FLAGS.knn
 DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 WANDB = FLAGS.wandb
-ADD_N_C = FLAGS.add_n_c
+ADD_N_C = not FLAGS.dont_add_n_c
 TO_CATEGORICAL_IND = FLAGS.to_categorical_index
 TO_CATEGORICAL_SIZES = FLAGS.to_categorical_sizes
 OMIT_PARAMETERS_RANGES = FLAGS.omit_parameters_ranges
