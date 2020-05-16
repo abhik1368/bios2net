@@ -16,7 +16,7 @@ def placeholder_inputs(batch_size, num_point, num_channels):
     return pointclouds_pl, labels_pl
 
 
-def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=None):
+def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=None, inception=True, **kwargs):
     """ Classification PointNet, input is BxNx3, output Bx40 """
     batch_size = point_cloud.get_shape()[0].value
     num_point = point_cloud.get_shape()[1].value
@@ -30,17 +30,37 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
         l0_points = None
     end_points['l0_xyz'] = l0_xyz
 
+    input_image = tf.expand_dims(point_cloud, 2)
+
+    net, conv_ker = tf_util.inception(input_image, 64, scope='seq_conv1',
+                            kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
+                            kernels_fraction=[2, 2, 2, 2],
+                            return_kernel=True,
+                            bn=True, bn_decay=bn_decay,
+                            is_training=is_training)
+    end_points['conv_ker'] = conv_ker
+    net, conv_ker = tf_util.inception(input_image, 32, scope='seq_conv2',
+                            kernel_heights=[1, 3, 5, 7], kernel_widths=[1, 1, 1, 1],
+                            kernels_fraction=[2, 2, 2, 2],
+                            return_kernel=True,
+                            bn=True, bn_decay=bn_decay,
+                            is_training=is_training)
+
+    conv_net = tf.squeeze(net)
+
+    l0_points = tf.concat([conv_net, l0_points], axis=-1)
+
     # Set abstraction layers
     l1_xyz, l1_points = pointnet_sa_module_msg(l0_xyz, l0_points, 512, [0.1,0.2,0.4], [16,32,128], [[32,32,64], [64,64,128], [64,96,128]], is_training, bn_decay, scope='layer1', use_nchw=True, weight_decay=weight_decay)
     l2_xyz, l2_points = pointnet_sa_module_msg(l1_xyz, l1_points, 128, [0.2,0.4,0.8], [32,64,128], [[64,64,128], [128,128,256], [128,128,256]], is_training, bn_decay, scope='layer2', weight_decay=weight_decay)
-    l3_xyz, l3_points, _ = pointnet_sa_module(l2_xyz, l2_points, npoint=None, radius=None, nsample=None, mlp=[256,512,1024], mlp2=None, group_all=True, is_training=is_training, bn_decay=bn_decay, scope='layer3', weight_decay=weight_decay)
+    l3_xyz, l3_points, _, _ = pointnet_sa_module(l2_xyz, l2_points, npoint=None, radius=None, nsample=None, mlp=[256,512,1024], mlp2=None, group_all=True, is_training=is_training, bn_decay=bn_decay, scope='layer3', weight_decay=weight_decay)
 
     # Fully connected layers
     net = tf.reshape(l3_points, [batch_size, -1])
     net = tf_util.fully_connected(net, 512, bn=True, is_training=is_training, scope='fc1', bn_decay=bn_decay, weight_decay=weight_decay)
-    net = tf_util.dropout(net, keep_prob=0.4, is_training=is_training, scope='dp1')
+    net = tf_util.dropout(net, rate=0.6, is_training=is_training, scope='dp1')
     net = tf_util.fully_connected(net, 256, bn=True, is_training=is_training, scope='fc2', bn_decay=bn_decay, weight_decay=weight_decay)
-    net = tf_util.dropout(net, keep_prob=0.4, is_training=is_training, scope='dp2')
+    net = tf_util.dropout(net, rate=0.6, is_training=is_training, scope='dp2')
     net = tf_util.fully_connected(net, n_classes, activation_fn=None, scope='fc3')
 
     return net, end_points
