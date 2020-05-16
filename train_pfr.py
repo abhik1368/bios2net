@@ -36,7 +36,7 @@ parser.add_argument('--batch_size', type=int, default=32, help='Batch Size durin
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
-parser.add_argument('--inception', default=True, action='store_true')
+parser.add_argument('--no_extractor', default=False, action='store_true')
 parser.add_argument('--weight_decay', default=0.001, type=float, help='Weight decay applied to all dense and conv layers.')
 parser.add_argument('--no_shuffle_points', action='store_true', help='Whether to shuffle points within examples.')
 parser.add_argument('--knn', action='store_true', default=False, help='Whether to use knn for point sampling')
@@ -63,6 +63,7 @@ BASE_LEARNING_RATE = FLAGS.learning_rate
 GPU_INDEX = FLAGS.gpu
 MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
+EXTRACTOR = not FLAGS.no_extractor
 INCEPTION = FLAGS.inception
 WEIGHT_DECAY = FLAGS.weight_decay
 NO_SHUFFLE_POINTS = FLAGS.no_shuffle_points
@@ -138,7 +139,13 @@ INIT_TIMESTAMP = get_timestamp()
 
 if WANDB:
     import wandb
-    wandb.init(project='pointnet_pfr', name=LOG_DIR if LOG_DIR else INIT_TIMESTAMP)
+    wandb.init(
+        project='pointnet_pfr2', name=LOG_DIR if LOG_DIR else INIT_TIMESTAMP,
+        tags=[
+            DATASET_PATH.split('/')[-1], str(NUM_POINT), '-'.join(OMIT_PARAMETERS_RANGES), FLAGS.model,
+            'extr' if EXTRACTOR else 'no_extr'
+        ]
+    )
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -193,7 +200,8 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, inception=INCEPTION, weight_decay=WEIGHT_DECAY, knn=KNN)
+            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, extractor=EXTRACTOR,
+                weight_decay=WEIGHT_DECAY, knn=KNN)
 
             MODEL.get_loss(pred, labels_pl, end_points)
             losses = tf.get_collection('losses')
