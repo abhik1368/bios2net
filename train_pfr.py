@@ -64,7 +64,6 @@ GPU_INDEX = FLAGS.gpu
 MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
 EXTRACTOR = not FLAGS.no_extractor
-INCEPTION = FLAGS.inception
 WEIGHT_DECAY = FLAGS.weight_decay
 NO_SHUFFLE_POINTS = FLAGS.no_shuffle_points
 KNN = FLAGS.knn
@@ -142,7 +141,7 @@ if WANDB:
     wandb.init(
         project='pointnet_pfr2', name=LOG_DIR if LOG_DIR else INIT_TIMESTAMP,
         tags=[
-            DATASET_PATH.split('/')[-1], str(NUM_POINT), '-'.join(OMIT_PARAMETERS_RANGES), FLAGS.model,
+            DATASET_PATH.split('/')[-1], str(NUM_POINT), '-'.join([str(i) for i in OMIT_PARAMETERS_RANGES]), FLAGS.model,
             'extr' if EXTRACTOR else 'no_extr'
         ]
     )

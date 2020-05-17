@@ -52,7 +52,8 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
 
         conv_net = tf.squeeze(net)
 
-        l0_points = tf.concat([conv_net, l0_points], axis=-1)
+        l0_points = tf.concat([l0_points, conv_net], axis=-1)
+    end_points['points'] = l0_points
 
     # Set abstraction layers
     # Note: When using NCHW for layer 2, we see increased GPU memory usage (in TF1.4).

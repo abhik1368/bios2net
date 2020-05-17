@@ -130,12 +130,15 @@ def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_al
                     kernel = ker
         else:
             for i, num_out_channel in enumerate(mlp):
-                new_points = tf_util.conv2d(new_points, num_out_channel, [1,1],
+                new_points, ker = tf_util.conv2d(new_points, num_out_channel, [1,1],
+                                            return_kernel=True,
                                             padding='VALID', stride=[1,1],
                                             bn=bn, is_training=is_training,
                                             scope='conv%d'%(i), bn_decay=bn_decay,
                                             weight_decay=weight_decay,
                                             data_format=data_format)
+                if i == 0:
+                    kernel = ker
         if use_nchw: new_points = tf.transpose(new_points, [0,2,3,1])
 
         # Pooling in Local Regions
