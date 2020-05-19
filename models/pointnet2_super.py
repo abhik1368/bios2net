@@ -19,6 +19,27 @@ def placeholder_inputs(batch_size, num_point, num_channels):
     labels_pl = tf.placeholder(tf.int32, shape=(batch_size))
     return pointclouds_pl, labels_pl
 
+def conv_net(point_cloud, is_training, bn_decay=None):
+
+    net = tf_util.inception(point_cloud, 256, scope='temp1_1', kernel_heights=[1, 3, 5, 7],
+                    kernel_widths=[1, 1, 1, 1], kernels_fraction=[2, 2, 2, 2], bn=True, bn_decay=bn_decay, is_training=is_training)
+    net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='temp1_1_max_pool', stride=[2, 1], padding='SAME')
+
+    net = tf_util.inception(net, 512, scope='temp1_2', kernel_heights=[1, 3, 5, 7],
+                    kernel_widths=[1, 1, 1, 1], kernels_fraction=[2, 2, 2, 2], bn=True, bn_decay=bn_decay, is_training=is_training)
+    net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='temp1_1_max_pool', stride=[2, 1], padding='SAME')
+
+    net = tf_util.inception(net, 1024, scope='temp1_2', kernel_heights=[1, 3, 5, 7],
+                    kernel_widths=[1, 1, 1, 1], kernels_fraction=[2, 2, 2, 2], bn=True, bn_decay=bn_decay, is_training=is_training)
+    net = tf_util.max_pool2d(net, kernel_size=[2, 1], scope='temp1_1_max_pool', stride=[2, 1], padding='SAME')
+
+    net = tf_util.avg_pool2d(net, kernel_size=[net.shape[1], 1], scope='temp1_GAP', stride=[net.shape[1], 1], padding='SAME')
+
+    net = tf.squeeze(net)
+
+    return net
+
+
 def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=None, extractor=True, **kwargs):
     """ Classification PointNet, input is BxNx3, output Bx40 """
     batch_size = point_cloud.get_shape()[0].value
@@ -60,11 +81,15 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     # So we only use NCHW for layer 1 until this issue can be resolved.
     l1_xyz, l1_points, l1_indices, pt_ker = pointnet_sa_module(l0_xyz, l0_points, npoint=256, radius=0.2, nsample=64, mlp=[64,64,128], mlp2=None, group_all=False, is_training=is_training, bn_decay=bn_decay, scope='layer1', use_nchw=True)
     end_points['pt_ker'] = pt_ker
+
+    temporal_1 = conv_net(tf.concat([l1_xyz, l1_points], axis=-1), is_training=is_training, bn_decay=bn_decay)
+
     l2_xyz, l2_points, l2_indices, _ = pointnet_sa_module(l1_xyz, l1_points, npoint=128, radius=0.4, nsample=128, mlp=[128,128,256], mlp2=None, group_all=False, is_training=is_training, bn_decay=bn_decay, scope='layer2')
+
     l3_xyz, l3_points, l3_indices, _ = pointnet_sa_module(l2_xyz, l2_points, npoint=None, radius=None, nsample=None, mlp=[256,512,1024], mlp2=None, group_all=True, is_training=is_training, bn_decay=bn_decay, scope='layer3')
     net = tf.reshape(l3_points, [batch_size, -1])
 
-    # net = tf.concat([conv_net, net], axis=-1)
+    net = tf.concat([net, temporal_1], axis=-1)
     end_points['feature_vector'] = net
 
     # Fully connected layers
