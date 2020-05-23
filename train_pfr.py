@@ -199,12 +199,14 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, extractor=EXTRACTOR,
+            pt_pred, pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, extractor=EXTRACTOR,
                 weight_decay=WEIGHT_DECAY, knn=KNN)
 
-            MODEL.get_loss(pred, labels_pl, end_points)
+            MODEL.get_loss(pt_pred, pred, labels_pl, end_points)
             losses = tf.get_collection('losses')
+#             losses2 = tf.get_collection('losses2')
             total_loss = tf.add_n(losses, name='total_loss')
+#             total_loss = tf.add_n(losses2, name='total_loss')
             tf.summary.scalar('total_loss', total_loss)
             for l in losses + [total_loss]:
                 tf.summary.scalar(l.op.name, l)
@@ -324,7 +326,7 @@ def train_one_epoch(sess, ops, train_writer):
             'avg class acc': avg_class_acc,
             'top3 acc': top3_accuracy,
             'top3 avg class acc': top3_avg_class_acc,
-            'confusion matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
+#             'confusion matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
             },
             step=step
         )
@@ -396,7 +398,7 @@ def eval_one_epoch(sess, ops, test_writer):
             'eval_avg_class_acc': avg_class_acc,
             'eval_top3_acc': top3_accuracy,
             'eval_top3_avg_class_acc': top3_avg_class_acc,
-            'eval_confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
+#             'eval_confusion_matrix': wandb.Image(plot_conf_matrix(confusion_matrix, True)),
             'eval_avg_recall': np.mean(recall),
             'eval_avg_precision': np.mean(precision),
             'eval_precision': wandb.Table(

@@ -21,7 +21,8 @@ tf.disable_v2_behavior()
 import numpy as np
 import tf_util
 
-def sample_and_group(npoint, radius, nsample, xyz, points, knn=False, use_xyz=True):
+
+def sample_and_group(npoint, radius, nsample, xyz, points, knn=False, use_xyz=True, sorted_sampling=True):
     '''
     Input:
         npoint: int32
@@ -38,8 +39,11 @@ def sample_and_group(npoint, radius, nsample, xyz, points, knn=False, use_xyz=Tr
         grouped_xyz: (batch_size, npoint, nsample, 3) TF tensor, normalized point XYZs
             (subtracted by seed point XYZ) in local regions
     '''
-
-    new_xyz = gather_point(xyz, farthest_point_sample(npoint, xyz)) # (batch_size, npoint, 3)
+    if sorted_sampling:
+        new_xyz = xyz[:, ::(xyz.shape[1] // npoint), :]
+    else:
+        new_xyz = gather_point(xyz, farthest_point_sample(npoint, xyz)) # (batch_size, npoint, 3)
+    
     if knn:
         _,idx = knn_point(nsample, xyz, new_xyz)
     else:
@@ -86,7 +90,7 @@ def sample_and_group_all(xyz, points, use_xyz=True):
     return new_xyz, new_points, idx, grouped_xyz
 
 
-def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_all, is_training, bn_decay, scope, inception=False, weight_decay=None, bn=True, pooling='max', knn=False, use_xyz=True, use_nchw=False, ):
+def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_all, is_training, bn_decay, scope, inception=False, weight_decay=None, bn=True, pooling='max', knn=False, use_xyz=True, use_nchw=False, sorted_sampling=True):
     ''' PointNet Set Abstraction (SA) Module
         Input:
             xyz: (batch_size, ndataset, 3) TF tensor
@@ -110,9 +114,9 @@ def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_al
         # Sample and Grouping
         if group_all:
             nsample = xyz.get_shape()[1].value
-            new_xyz, new_points, idx, grouped_xyz = sample_and_group_all(xyz, points, use_xyz)
+            new_xyz, new_points, idx, grouped_xyz = sample_and_group_all(xyz, points, use_xyz,)
         else:
-            new_xyz, new_points, idx, grouped_xyz = sample_and_group(npoint, radius, nsample, xyz, points, knn, use_xyz)
+            new_xyz, new_points, idx, grouped_xyz = sample_and_group(npoint, radius, nsample, xyz, points, knn, use_xyz, sorted_sampling=sorted_sampling)
 
         # Point Feature Embedding
         if use_nchw: new_points = tf.transpose(new_points, [0,3,1,2])
