@@ -279,8 +279,8 @@ def train():
                     log_string(f"Model saved in file: {save_path}")
                     best_acc = acc
                     best_epoch = EPOCH_CNT
-            if EPOCH_CNT - best_epoch > 80:
-                log_string('Model didn\'t for 80 epoches. Aborting.')
+            if EPOCH_CNT - best_epoch > 120:
+                log_string('Model didn\'t for 120 epoches. Aborting.')
                 break
             EPOCH_CNT += 1
 

@@ -148,8 +148,8 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     
     # concat output from poitnet and temporal networks
     if temporal:
-#         net = tf.concat([ptnet_out, temporal_1, temporal_2], axis=-1)
-        net = tf.math.add_n([ptnet_out, temporal_1, temporal_2])
+        net = tf.concat([ptnet_out, temporal_1, temporal_2], axis=-1)
+#         net = tf.math.add_n([ptnet_out, temporal_1, temporal_2])
         print(net)
     else:
         net = ptnet_out
