@@ -147,19 +147,19 @@ def pointnet_sa_module(xyz, points, npoint, radius, nsample, mlp, mlp2, group_al
 
         # Pooling in Local Regions
         if pooling=='max':
-            new_points = tf.reduce_max(new_points, axis=[2], keep_dims=True, name='maxpool')
+            new_points = tf.reduce_max(new_points, axis=[2], keepdims=True, name='maxpool')
         elif pooling=='avg':
-            new_points = tf.reduce_mean(new_points, axis=[2], keep_dims=True, name='avgpool')
+            new_points = tf.reduce_mean(new_points, axis=[2], keepdims=True, name='avgpool')
         elif pooling=='weighted_avg':
             with tf.variable_scope('weighted_avg'):
-                dists = tf.norm(grouped_xyz,axis=-1,ord=2,keep_dims=True)
+                dists = tf.norm(grouped_xyz,axis=-1,ord=2,keepdims=True)
                 exp_dists = tf.exp(-dists * 5)
-                weights = exp_dists/tf.reduce_sum(exp_dists,axis=2,keep_dims=True) # (batch_size, npoint, nsample, 1)
+                weights = exp_dists/tf.reduce_sum(exp_dists,axis=2,keepdims=True) # (batch_size, npoint, nsample, 1)
                 new_points *= weights # (batch_size, npoint, nsample, mlp[-1])
-                new_points = tf.reduce_sum(new_points, axis=2, keep_dims=True)
+                new_points = tf.reduce_sum(new_points, axis=2, keepdims=True)
         elif pooling=='max_and_avg':
-            max_points = tf.reduce_max(new_points, axis=[2], keep_dims=True, name='maxpool')
-            avg_points = tf.reduce_mean(new_points, axis=[2], keep_dims=True, name='avgpool')
+            max_points = tf.reduce_max(new_points, axis=[2], keepdims=True, name='maxpool')
+            avg_points = tf.reduce_mean(new_points, axis=[2], keepdims=True, name='avgpool')
             new_points = tf.concat([avg_points, max_points], axis=-1)
 
         # [Optional] Further Processing
