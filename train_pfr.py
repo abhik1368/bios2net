@@ -49,6 +49,7 @@ parser.add_argument('--dont_add_n_c', action='store_true', default=False)
 parser.add_argument('--to_categorical_index', nargs="+", type=int, default=[], help='Indicate which indices correspod to categorical values')
 parser.add_argument('--to_categorical_sizes', nargs="+", type=int, default=[], help='Indicate sizes of subsequent categorical values')
 parser.add_argument('--omit_parameters_ranges', nargs='+', type=int, default=[], help='Ranges of indices of parameters to omit in min, max order.')
+parser.add_argument('--aux_losses', nargs='+', type=int, default=[0.5, 0.35, 0.15], help='Weights for auxilliary losses for main classification head, pointnet head and two temporal heads.')
 
 FLAGS = parser.parse_args()
 
@@ -75,6 +76,7 @@ ADD_N_C = not FLAGS.dont_add_n_c
 TO_CATEGORICAL_IND = FLAGS.to_categorical_index
 TO_CATEGORICAL_SIZES = FLAGS.to_categorical_sizes
 OMIT_PARAMETERS_RANGES = FLAGS.omit_parameters_ranges
+AUX_LOSSES = FLAGS.aux_losses
 
 if len(OMIT_PARAMETERS_RANGES) % 2 != 0:
     raise Exception('You should provide even number for flag omit_parameters_range')
@@ -206,11 +208,11 @@ def train():
 
             # Get model and loss
             
-            site_pred, pred, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, 
+            pred, site_preds, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, 
                                                           extractor=EXTRACTOR, temporal=TEMPORAL,
                                                           weight_decay=WEIGHT_DECAY, knn=KNN)
-            
-            MODEL.get_loss(site_pred, pred, labels_pl, end_points)
+            print('site preds:', site_preds)
+            MODEL.get_loss(pred, site_preds, labels_pl, end_points, AUX_LOSSES)
             losses = tf.get_collection('losses')
             total_loss = tf.add_n(losses, name='total_loss')
             tf.summary.scalar('total_loss', total_loss)

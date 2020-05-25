@@ -134,13 +134,13 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
         end_points['temp1_ker'] = ker
 
         # second temporal
-        net = tf.concat([l2_xyz, l0_points[:, ::(l0_points.shape[1] // 128), :], l2_points], axis=-1)
-        end_points['temp2_input'] = net
-        temporal_2, ker = conv_network(net, is_training=is_training, scope='temp2', channels_out=1024, bn_decay=bn_decay)
+#         net = tf.concat([l2_xyz, l0_points[:, ::(l0_points.shape[1] // 128), :], l2_points], axis=-1)
+#         end_points['temp2_input'] = net
+#         temporal_2, ker = conv_network(net, is_training=is_training, scope='temp2', channels_out=1024, bn_decay=bn_decay)
 
         # classification for temporal
         temp1_pred = classification_head(temporal_1, is_training, 'cls_temp1', n_classes, bn_decay, weight_decay)
-        temp2_pred = classification_head(temporal_2, is_training, 'cls_temp2', n_classes, bn_decay, weight_decay)
+#         temp2_pred = classification_head(temporal_2, is_training, 'cls_temp2', n_classes, bn_decay, weight_decay)
 
     # classification from potinent
     pt_pred = classification_head(ptnet_out, is_training, 'cls_ptnet', n_classes, bn_decay, weight_decay)
@@ -148,7 +148,7 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     
     # concat output from poitnet and temporal networks
     if temporal:
-        net = tf.concat([ptnet_out, temporal_1, temporal_2], axis=-1)
+        net = tf.concat([ptnet_out, temporal_1], axis=-1)
 #         net = tf.math.add_n([ptnet_out, temporal_1, temporal_2])
         print(net)
     else:
@@ -158,24 +158,25 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     # classification from entire network
     final_pred = classification_head(net, is_training, 'cls_net', n_classes, bn_decay, weight_decay)
     if temporal:
-        return [temp1_pred, temp2_pred, pt_pred], final_pred, end_points
+        return final_pred, [pt_pred, temp1_pred], end_points
     else:
-        return [pt_pred], final_pred, end_points
+        return final_pred, [pt_pred], end_points
 
 
-def get_loss(site_preds, pred, label, end_points):
+def get_loss(pred, site_preds, label, end_points, aux_loss_weights):
     """ pred: B*NUM_CLASSES,
         label: B, """
     
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=label)
-    classify_loss = tf.reduce_mean(loss) * 0.4
+    classify_loss = tf.reduce_mean(loss) * aux_loss_weights[0]
     tf.summary.scalar('classify loss', classify_loss)
     tf.add_to_collection('losses', classify_loss)
 
     classify_aux_losses = []
-    for i in site_preds:
+    for i, weight in zip(site_preds, aux_loss_weights[1:len(site_preds)+1]):
+        print('Weighting loss of', i.name, 'by', weight)
         loss2 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=i, labels=label)
-        classify_loss2 = tf.reduce_mean(loss2) * 0.2 # (1 - 0.4) / len(site_preds)
+        classify_loss2 = tf.reduce_mean(loss2) * weight
         classify_aux_losses.append(tf.reduce_mean(loss2))
         tf.summary.scalar('classify loss', classify_loss2)
         tf.add_to_collection('losses', classify_loss2)
