@@ -103,7 +103,10 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
         extr, ker = extractor_layers(point_cloud, 5, is_training, bn_decay, bn=True, n_out=32)
         end_points['extr'] = extr
         end_points['extr_ker'] = ker
-        l0_points = tf.concat([l0_points, extr], axis=-1)
+        if l0_points is not None:
+            l0_points = tf.concat([l0_points, extr], axis=-1)
+        else:
+            l0_points = extr
 
     # first pointnet layer
     l1_xyz, l1_points, l1_indices, pt_ker = pointnet_sa_module(
