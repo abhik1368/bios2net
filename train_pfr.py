@@ -49,7 +49,7 @@ parser.add_argument('--dont_add_n_c', action='store_true', default=False)
 parser.add_argument('--to_categorical_index', nargs="+", type=int, default=[], help='Indicate which indices correspod to categorical values')
 parser.add_argument('--to_categorical_sizes', nargs="+", type=int, default=[], help='Indicate sizes of subsequent categorical values')
 parser.add_argument('--omit_parameters_ranges', nargs='+', type=int, default=[], help='Ranges of indices of parameters to omit in min, max order.')
-parser.add_argument('--aux_losses', nargs='+', type=int, default=[0.5, 0.35, 0.15], help='Weights for auxilliary losses for main classification head, pointnet head and two temporal heads.')
+parser.add_argument('--aux_losses', nargs='+', type=float, default=[0.5, 0.35, 0.15], help='Weights for auxilliary losses for main classification head, pointnet head and two temporal heads.')
 
 FLAGS = parser.parse_args()
 
