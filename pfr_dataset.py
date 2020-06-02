@@ -7,6 +7,7 @@ import os.path
 import numpy as np
 import sys
 from glob import glob
+from collections import Counter
 import tensorflow as tf
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -72,6 +73,7 @@ class PFRDataset:
         )
         self.cache_size = cache_size  # how many data points to cache in memory
         self.cache = {}  # from index to (point_set, cls) tuple
+        self.get_classes_weights()
 
         if shuffle is None:
             if split == 'train':
@@ -134,6 +136,7 @@ class PFRDataset:
         if self.add_n_c_info:
             point_set = np.concatenate([point_set, self.n_c], axis=1)
 
+
         if self.normalize:
             point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
         if not self.normal_channel:
@@ -167,11 +170,24 @@ class PFRDataset:
         bsize = end_idx - start_idx
         batch_data = np.zeros((bsize, self.npoints, self.num_channel()))
         batch_label = np.zeros((bsize), dtype=np.int32)
+        batch_cls_weights = np.zeros((bsize), dtype=np.float32)
         for i in range(bsize):
             ps, cls = self._get_item(self.idxs[i + start_idx])
             batch_data[i] = ps
             batch_label[i] = cls
+            batch_cls_weights[i] = self.weights[cls[0]]
         self.batch_idx += 1
         if augment:
             batch_data = self._augment_batch_data(batch_data)
-        return batch_data, batch_label
+        return batch_data, batch_label, batch_cls_weights
+    
+    def get_classes_weights(self):
+        classes = [j[0] for j in self.datapath]
+        weights = {k: 1/v for k,v in Counter(classes).items()}
+        mean = np.mean(list(weights.values()))
+        weights = {k: v / mean for k, v in weights.items()}
+        sorted_weights = sorted(weights.items(), key=lambda x: (x[0][0], x[0].split('.')[2:]))
+#         return [i[1] for i in sorted_weights]
+        self.weights = [i[1] for i in sorted_weights]
+    
+    

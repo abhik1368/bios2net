@@ -128,6 +128,7 @@ NUM_CLASSES = len(TEST_DATASET.classes_names)
 FEATURES_CHANNELS = TRAIN_DATASET.num_channel() - 3
 LABELS = [i[0] for i in sorted(TRAIN_DATASET.classes.items(), key=lambda item: item[1])]
 
+
 print(f'Database created with {FEATURES_CHANNELS + 3} channels')
 
 def get_timestamp():
@@ -149,7 +150,7 @@ if WANDB:
             '-'.join([str(i) for i in OMIT_PARAMETERS_RANGES]), 
             FLAGS.model,
             'extr' if EXTRACTOR else 'no_extr',
-            'temporal' if TEMPORAL else 'no_temporal'
+            'temporal' if TEMPORAL else 'no_temporal',
         ]
     )
 
@@ -195,7 +196,7 @@ def train():
         with tf.device('/gpu:'+str(GPU_INDEX)):
             print('connected to gpu')
             print('model:', MODEL)
-            pointclouds_pl, labels_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT, 3 + FEATURES_CHANNELS)
+            pointclouds_pl, labels_pl, weights_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT, 3 + FEATURES_CHANNELS)
             is_training_pl = tf.placeholder(tf.bool, shape=())
 
             # Note the global_step=batch parameter to minimize.
@@ -212,7 +213,7 @@ def train():
                                                           extractor=EXTRACTOR, temporal=TEMPORAL,
                                                           weight_decay=WEIGHT_DECAY, knn=KNN)
             print('site preds:', site_preds)
-            MODEL.get_loss(pred, site_preds, labels_pl, end_points, AUX_LOSSES)
+            MODEL.get_loss(pred, site_preds, labels_pl, end_points, AUX_LOSSES, weights_pl)
             losses = tf.get_collection('losses')
             total_loss = tf.add_n(losses, name='total_loss')
             tf.summary.scalar('total_loss', total_loss)
@@ -254,6 +255,7 @@ def train():
 
         ops = {'pointclouds_pl': pointclouds_pl,
                'labels_pl': labels_pl,
+               'weights_pl': weights_pl,
                'is_training_pl': is_training_pl,
                'pred': pred,
                'losses': losses,
@@ -296,22 +298,26 @@ def train_one_epoch(sess, ops, train_writer, EPOCH_CNT):
     # Make sure batch data is of same size
     cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TRAIN_DATASET.num_channel()))
     cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
-
+    cur_batch_weights = np.zeros((BATCH_SIZE), dtype=np.float32)
+    
     confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
     top3_correct = 0
     top3_class_correct = np.zeros((NUM_CLASSES))
     batch_losses = []
     batch_idx = 0
     while TRAIN_DATASET.has_next_batch():
-        batch_data, batch_label = TRAIN_DATASET.next_batch(augment=True)
+        batch_data, batch_label, batch_cls_weights = TRAIN_DATASET.next_batch(augment=True)
         # batch_data = provider.random_point_dropout(batch_data)
         bsize = batch_data.shape[0]
         cur_batch_data[0:bsize,...] = batch_data
         cur_batch_label[0:bsize] = batch_label
-
+        cur_batch_weights[0:bsize] = batch_cls_weights
+        
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
                      ops['labels_pl']: cur_batch_label,
-                     ops['is_training_pl']: is_training,}
+                     ops['is_training_pl']: is_training,
+                     ops['weights_pl']: cur_batch_weights
+                    }
         summary, step, _, loss_val, losses, pred_val, lr = sess.run([ops['merged'], ops['step'],
             ops['train_op'], ops['loss'], ops['losses'], ops['pred'], ops['lr']], feed_dict=feed_dict)
         
@@ -361,6 +367,7 @@ def eval_one_epoch(sess, ops, test_writer, EPOCH_CNT):
     # Make sure batch data is of same size
     cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TEST_DATASET.num_channel()))
     cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
+    cur_batch_weights = np.zeros((BATCH_SIZE), dtype=np.float32)
 
     confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
     batch_losses = []
@@ -372,15 +379,17 @@ def eval_one_epoch(sess, ops, test_writer, EPOCH_CNT):
     log_string(f'---- EPOCH {EPOCH_CNT:03d} EVALUATION ----')
 
     while TEST_DATASET.has_next_batch():
-        batch_data, batch_label = TEST_DATASET.next_batch(augment=False)
+        batch_data, batch_label, batch_cls_weights = TEST_DATASET.next_batch(augment=False)
         bsize = batch_data.shape[0]
         # for the last batch in the epoch, the bsize:end are from last batch
         cur_batch_data[0:bsize,...] = batch_data
         cur_batch_label[0:bsize] = batch_label
+        cur_batch_weights[0:bsize] = batch_cls_weights
 
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
                      ops['labels_pl']: cur_batch_label,
-                     ops['is_training_pl']: is_training}
+                     ops['is_training_pl']: is_training,
+                     ops['weights_pl']: cur_batch_weights}
         summary, step, loss_val, losses, pred_val, lr = sess.run([ops['merged'], ops['step'],
             ops['loss'], ops['losses'], ops['pred'], ops['lr']], feed_dict=feed_dict)
         test_writer.add_summary(summary, step)
@@ -426,8 +435,6 @@ def eval_one_epoch(sess, ops, test_writer, EPOCH_CNT):
             'eval_recall': wandb.Table(
                 columns=TRAIN_DATASET.classes_names,
                 data=[recall.astype(str).tolist()]),
-            'epoch': EPOCH_CNT,
-            'lr': lr,
             },
             step=step
         )
