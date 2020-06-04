@@ -17,7 +17,8 @@ from pointnet_util import pointnet_sa_module
 def placeholder_inputs(batch_size, num_point, num_channels):
     pointclouds_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point, num_channels))
     labels_pl = tf.placeholder(tf.int32, shape=(batch_size))
-    return pointclouds_pl, labels_pl
+    weights_pl = tf.placeholder(tf.float32, shape=(batch_size))
+    return pointclouds_pl, labels_pl, weights_pl
 
 def conv_network(point_cloud, is_training, scope, channels_out=1024, bn_decay=None):
     
@@ -86,11 +87,15 @@ def get_model(point_cloud, is_training, n_classes, bn_decay=None, weight_decay=N
     return final_pred, [], end_points
 
 
-def get_loss(pred, site_preds, label, end_points, aux_loss_weights):
+def get_loss(pred, site_preds, label, end_points, aux_loss_weights, classes_weights=None):
     """ pred: B*NUM_CLASSES,
         label: B, 
         aux_loss_weights ignored
     """
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=label)
+    if classes_weights is not None:
+        loss = tf.multiply(classes_weights, loss)
+
     
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=label)
     classify_loss = tf.reduce_mean(loss) * 1
