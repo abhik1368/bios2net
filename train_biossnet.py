@@ -20,7 +20,7 @@ sys.path.append(os.path.join(ROOT_DIR, 'models'))
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import provider
 import tf_util
-import pfr_dataset
+import fold_dataset
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -28,7 +28,7 @@ import seaborn as sns
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, help='Path to dataset')
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--model', default='pointnet2_cls_ssg', help='Model name [default: pointnet2_cls_ssg]')
+parser.add_argument('--model', default='biossnet', help='Model name [default: biossnet]')
 parser.add_argument('--no_temporal', default=False, action='store_true')
 parser.add_argument('--no_extractor', default=False, action='store_true')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
@@ -97,7 +97,7 @@ BN_DECAY_CLIP = 0.99
 
 HOSTNAME = socket.gethostname()
 
-TRAIN_DATASET = pfr_dataset.PFRDataset(
+TRAIN_DATASET = fold_dataset.PFRDataset(
     root=DATASET_PATH,
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
@@ -110,7 +110,7 @@ TRAIN_DATASET = pfr_dataset.PFRDataset(
     to_categorical_indexes=TO_CATEGORICAL_IND,
     to_categorical_sizes=TO_CATEGORICAL_SIZES
 )
-TEST_DATASET = pfr_dataset.PFRDataset(
+TEST_DATASET = fold_dataset.PFRDataset(
     root=DATASET_PATH,
     batch_size=BATCH_SIZE,
     npoints=NUM_POINT,
@@ -145,9 +145,9 @@ if WANDB:
     wandb.init(
         project=WANDB, name=LOG_DIR if LOG_DIR else INIT_TIMESTAMP,
         tags=[
-            DATASET_PATH.split('/')[-1], 
-            str(NUM_POINT), 
-            '-'.join([str(i) for i in OMIT_PARAMETERS_RANGES]), 
+            DATASET_PATH.split('/')[-1],
+            str(NUM_POINT),
+            '-'.join([str(i) for i in OMIT_PARAMETERS_RANGES]),
             FLAGS.model,
             'extr' if EXTRACTOR else 'no_extr',
             'temporal' if TEMPORAL else 'no_temporal',
@@ -208,8 +208,8 @@ def train():
             tf.summary.scalar('bn_decay', bn_decay)
 
             # Get model and loss
-            
-            pred, site_preds, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay, 
+
+            pred, site_preds, end_points = MODEL.get_model(pointclouds_pl, is_training_pl, NUM_CLASSES, bn_decay=bn_decay,
                                                           extractor=EXTRACTOR, temporal=TEMPORAL,
                                                           weight_decay=WEIGHT_DECAY, knn=KNN)
             print('site preds:', site_preds)
@@ -268,7 +268,7 @@ def train():
 
         best_acc = -1
         best_epoch = -1
-        
+
         for epoch in range(MAX_EPOCH):
             log_string(f'\n**** EPOCH {epoch:03d} ****')
             sys.stdout.flush()
@@ -299,7 +299,7 @@ def train_one_epoch(sess, ops, train_writer, EPOCH_CNT):
     cur_batch_data = np.zeros((BATCH_SIZE,NUM_POINT,TRAIN_DATASET.num_channel()))
     cur_batch_label = np.zeros((BATCH_SIZE), dtype=np.int32)
     cur_batch_weights = np.zeros((BATCH_SIZE), dtype=np.float32)
-    
+
     confusion_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
     top3_correct = 0
     top3_class_correct = np.zeros((NUM_CLASSES))
@@ -312,7 +312,7 @@ def train_one_epoch(sess, ops, train_writer, EPOCH_CNT):
         cur_batch_data[0:bsize,...] = batch_data
         cur_batch_label[0:bsize] = batch_label
         cur_batch_weights[0:bsize] = batch_cls_weights
-        
+
         feed_dict = {ops['pointclouds_pl']: cur_batch_data,
                      ops['labels_pl']: cur_batch_label,
                      ops['is_training_pl']: is_training,
@@ -320,7 +320,7 @@ def train_one_epoch(sess, ops, train_writer, EPOCH_CNT):
                     }
         summary, step, _, loss_val, losses, pred_val, lr = sess.run([ops['merged'], ops['step'],
             ops['train_op'], ops['loss'], ops['losses'], ops['pred'], ops['lr']], feed_dict=feed_dict)
-        
+
         train_writer.add_summary(summary, step)
         pred_val_arg = np.argmax(pred_val, 1)
         batch_losses.append(loss_val)
@@ -418,7 +418,7 @@ def eval_one_epoch(sess, ops, test_writer, EPOCH_CNT):
     log_string(f'eval avg class acc {avg_class_acc}')
     log_string(f'eval top3 acc {top3_accuracy}')
     log_string(f'eval top3 avg class acc {top3_avg_class_acc}')
-    
+
     if WANDB:
         wandb.log(
             {'eval_mean_loss': np.mean(batch_losses),
