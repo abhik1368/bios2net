@@ -5,7 +5,6 @@
 import argparse
 import math
 from datetime import datetime, timezone
-import h5py
 import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
@@ -28,7 +27,7 @@ import seaborn as sns
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, help='Path to dataset')
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--model', default='biossnet', help='Model name [default: biossnet]')
+parser.add_argument('--model', default='bios2net', help='Model name [default: biossnet]')
 parser.add_argument('--no_temporal', default=False, action='store_true')
 parser.add_argument('--no_extractor', default=False, action='store_true')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
@@ -127,7 +126,6 @@ assert len(TEST_DATASET.classes_names) == len(TRAIN_DATASET.classes_names)
 NUM_CLASSES = len(TEST_DATASET.classes_names)
 FEATURES_CHANNELS = TRAIN_DATASET.num_channel() - 3
 LABELS = [i[0] for i in sorted(TRAIN_DATASET.classes.items(), key=lambda item: item[1])]
-
 
 print(f'Database created with {FEATURES_CHANNELS + 3} channels')
 
